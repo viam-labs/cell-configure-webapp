@@ -1,0 +1,28 @@
+{
+  "$schema": "https://dl.viam.dev/module.schema.json",
+  "module_id": "viam:cell-configure-webapp",
+  "visibility": "public_unlisted",
+  "url": "https://github.com/viam-labs/cell-configure-webapp",
+  "description": "Configure-time webapp for a palletizing/picking workcell: view, edit, and visualize the pallet, pick-station, and pack-sequencer in 3D.",
+  "models": [],
+  "applications": [
+    {
+      "name": "cell-configure-webapp",
+      "type": "single_machine",
+      "entrypoint": "apps/configure/index.html"
+    }
+  ],
+  "markdown_link": "README.md",
+  "entrypoint": "bin/cell-configure-webapp",
+  "first_run": "",
+  "build": {
+    "build": "make module.tar.gz",
+    "setup": "make setup",
+    "path": "module.tar.gz",
+    "arch": [
+      "linux/amd64",
+      "linux/arm64",
+      "darwin/arm64"
+    ]
+  }
+}

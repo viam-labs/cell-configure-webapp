@@ -1,0 +1,42 @@
+GO_BUILD_ENV :=
+GO_BUILD_FLAGS :=
+MODULE_BINARY := bin/cell-configure-webapp
+VERSION := $(shell cat VERSION 2>/dev/null)
+APP_HTML := apps/configure/index.html
+PLATFORM ?= linux/amd64
+
+$(MODULE_BINARY): Makefile go.mod cmd/module/*.go
+	$(GO_BUILD_ENV) go build $(GO_BUILD_FLAGS) -o $(MODULE_BINARY) cmd/module/main.go
+
+lint:
+	gofmt -s -w .
+
+update:
+	go get go.viam.com/rdk@latest
+	go mod tidy
+
+test:
+	go test ./...
+
+# stamp-version rewrites the version badge in the HTML from the VERSION file.
+# The <!--V-->...<!--/V--> markers keep the substitution idempotent and robust.
+stamp-version:
+	@if [ -z "$(VERSION)" ]; then echo "VERSION file missing or empty"; exit 1; fi
+	@sed -i.bak 's|<!--V-->[^<]*<!--/V-->|<!--V-->$(VERSION)<!--/V-->|' $(APP_HTML)
+	@rm -f $(APP_HTML).bak
+	@echo "Stamped $(APP_HTML) with v$(VERSION)"
+
+module.tar.gz: meta.json $(MODULE_BINARY) $(APP_HTML) VERSION
+	$(MAKE) stamp-version
+	strip $(MODULE_BINARY)
+	tar czf $@ meta.json $(MODULE_BINARY) apps
+
+module: test module.tar.gz
+
+all: test module.tar.gz
+
+publish: module.tar.gz
+	viam module upload --version $(VERSION) --platform $(PLATFORM) module.tar.gz
+
+setup:
+	go mod tidy

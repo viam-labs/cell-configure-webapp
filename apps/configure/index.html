@@ -1,0 +1,3992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cell Configure</title>
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --card: #ffffff;
+      --border: #e2e5e9;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --danger: #dc2626;
+      --danger-hover: #b91c1c;
+      --warn: #d97706;
+      --ok: #059669;
+      --code-bg: #f3f4f6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background: var(--bg);
+      color: var(--text);
+    }
+    h1 { font-size: 1.5em; margin: 0 0 4px 0; }
+    h2 { font-size: 1.05em; margin: 18px 0 8px 0; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+    .row { display: flex; gap: 8px; margin: 6px 0; flex-wrap: wrap; align-items: center; }
+    button {
+      padding: 9px 16px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.1s;
+    }
+    button:hover:not(:disabled) { background: #f3f4f6; border-color: #9ca3af; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    button.primary:hover:not(:disabled) { background: var(--primary-hover); border-color: var(--primary-hover); }
+    button.danger { background: var(--danger); color: #fff; border-color: var(--danger); }
+    button.danger:hover:not(:disabled) { background: var(--danger-hover); border-color: var(--danger-hover); }
+    select, input, textarea {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 14px;
+      background: #fff;
+      font-family: inherit;
+    }
+    textarea {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 12px;
+      width: 100%;
+      min-height: 180px;
+    }
+    label { font-size: 13px; color: var(--muted); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field input { width: 100%; }
+    .subcard { border: 1px dashed var(--border); border-radius: 6px; padding: 10px; margin-top: 8px; }
+    .subcard h3 { font-size: 0.9em; margin: 0 0 8px 0; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; }
+    .response, .err-msg {
+      background: var(--code-bg);
+      padding: 12px;
+      border-radius: 6px;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .err-msg { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
+    #conn { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    #conn.ok { color: var(--ok); }
+    #conn.err { color: var(--danger); }
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin: 0 0 6px 0;
+    }
+    .machine-moniker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 12px 6px 6px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      font-family: ui-monospace, monospace;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .machine-moniker .badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+      flex: 0 0 auto;
+    }
+    .machine-moniker .name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #111827;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    .machine-moniker a.name:hover { text-decoration: underline; }
+    .machine-moniker a.name:not([href]) { cursor: default; }
+    .machine-moniker a.name:not([href]):hover { text-decoration: none; }
+    .machine-moniker .name.dim { color: var(--muted); font-weight: 500; }
+    .layer-grid { display: flex; flex-wrap: wrap; gap: 16px; }
+    .layer { border: 1px solid var(--border); border-radius: 6px; padding: 10px; background: #fff; }
+    .layer-title { font-size: 12px; color: var(--muted); margin-bottom: 6px; font-family: ui-monospace, monospace; }
+    canvas { border: 1px solid var(--border); background: #fafafa; display: block; }
+    .summary {
+      font-family: ui-monospace, monospace;
+      font-size: 13px;
+      display: grid;
+      grid-template-columns: max-content 1fr;
+      gap: 4px 16px;
+    }
+    .summary .k { color: var(--muted); }
+    .warn-text { color: var(--warn); font-weight: 600; }
+    .flash {
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .flash.show { opacity: 1; }
+    .flash.ok { color: var(--ok); }
+    .flash.err { color: var(--danger); }
+    .config-grid { display: grid; grid-template-columns: minmax(280px, 1fr) minmax(320px, 1fr); gap: 16px; }
+    @media (max-width: 820px) { .config-grid { grid-template-columns: 1fr; } }
+    .preview canvas { width: 100%; height: 360px; display: block; cursor: grab; background: #fafafa; }
+    .preview canvas:active { cursor: grabbing; }
+    .preview-hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .diagram-row { display: flex; gap: 14px; flex-wrap: wrap; margin: 0 0 14px 0; }
+    .diagram-card { flex: 1 1 320px; min-width: 280px; background: #fafafa; border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; }
+    .diagram-card > summary { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; cursor: pointer; }
+    .diagram-card svg { width: 100%; height: auto; display: block; }
+    .dia-body { fill: #fde68a; stroke: #92400e; stroke-width: 1.2; }
+    .dia-box { fill: #e5e7eb; stroke: #4b5563; stroke-width: 1; }
+    .dia-dim { stroke: #374151; stroke-width: 0.8; fill: none; }
+    .dia-axis { stroke: #2563eb; stroke-width: 1; fill: none; }
+    .dia-floor { stroke: #6b7280; stroke-width: 0.8; stroke-dasharray: 4 3; }
+    .dia-leader { stroke: #7c3aed; stroke-width: 0.6; fill: none; stroke-dasharray: 2 2; }
+    .dia-label { font: 10px ui-monospace, Menlo, monospace; fill: #111827; }
+    .dia-field { font: 9.5px ui-monospace, Menlo, monospace; fill: #7c3aed; font-weight: 600; }
+  </style>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <defs>
+      <marker id="diaArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#374151"/>
+      </marker>
+    </defs>
+  </svg>
+  <div class="title-row">
+    <h1 style="margin: 0;">Cell Configure <span id="appVersion" style="font-size: 0.6em; color: var(--muted); font-weight: 400;">v<!--V-->0.1.27-rc1<!--/V--></span></h1>
+    <div id="machineMoniker" class="machine-moniker" title="Machine moniker (deterministic from hostname)">
+      <span class="badge" id="machineBadge" style="background:#9ca3af;">··</span>
+      <a class="name dim" id="machineName" target="_blank" rel="noopener noreferrer">unknown machine</a>
+    </div>
+  </div>
+  <div id="conn">Connecting…</div>
+
+  <div class="card">
+    <div class="row">
+      <label>Component name:</label>
+      <input id="resourceName" value="pack-sequencer" style="flex: 1; max-width: 300px;" />
+      <label style="margin-left: 12px;">Palletizer:</label>
+      <input id="palletizerName" value="palletizer" style="flex: 1; max-width: 220px;" />
+      <button onclick="reconnect()">Reconnect</button>
+      <button onclick="loadAll()">Reload from machine</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Palletizer Controls</h2>
+    <div class="row">
+      <button class="primary" onclick="palletizerCommand({start: true})" title="Reset to IDLE and start a fresh run">Start</button>
+      <button onclick="palletizerCommand({resume: true})" title="Continue from the current state (use after Pause)">Resume</button>
+      <button onclick="palletizerCommand({pause: true})">Pause</button>
+      <button onclick="palletizerCommand({stop: true})" title="Cancel in-flight motion and brake the arm">Stop</button>
+      <button onclick="palletizerCommand({release_vacuum: true})" title="Open the gripper to drop whatever it's holding (must be paused/stopped)">Release Vacuum</button>
+      <button class="danger" onclick="palletizerCommand({reset: true})">Reset</button>
+      <span id="palletizerMsg" class="flash"></span>
+    </div>
+    <div id="stateFlowSection" style="margin-top: 12px;">
+      <div style="font-size: 12px; color: var(--muted); margin-bottom: 6px;">
+        State machine — current state highlighted (live, polled at ~2 Hz).
+        <span id="stateFlowStatus" style="margin-left: 8px;"></span>
+      </div>
+      <div id="stateFlow" class="state-flow"></div>
+    </div>
+  </div>
+
+  <style>
+    .state-flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+    }
+    .state-pill {
+      font-size: 11px;
+      font-family: ui-monospace, Menlo, monospace;
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--code-bg);
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .state-pill.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+      font-weight: 600;
+    }
+    .state-pill.terminal-complete {
+      background: #16a34a;
+      color: white;
+      border-color: #16a34a;
+      font-weight: 600;
+    }
+    .state-pill.terminal-error {
+      background: #dc2626;
+      color: white;
+      border-color: #dc2626;
+      font-weight: 600;
+    }
+    .state-flow-arrow {
+      color: var(--muted);
+      font-size: 10px;
+      margin: 0 2px;
+    }
+  </style>
+
+  <div class="card">
+    <h2>World Scene</h2>
+    <div style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">
+      Overview of everything in world coordinates: arm pedestal at world origin,
+      pallet, and pick station positioned by their frames. Boxes appear here as
+      they're confirmed placed during a run.
+    </div>
+    <div class="preview">
+      <canvas id="world3dCanvas"></canvas>
+      <div class="preview-hint">
+        Grey pedestal = arm base · brown = pallet wood · tan = pick-station surface ·
+        transparent box = a box at the pickup spot · solid colored boxes = placed boxes ·
+        red frame = vacuum grab · blue frame = pick-home.
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Pallet &amp; Box Configuration</h2>
+
+    <details class="diagram-card" open style="margin-bottom: 10px;">
+      <summary>Heights &amp; place approach (isometric)</summary>
+      <svg viewBox="0 0 720 290" xmlns="http://www.w3.org/2000/svg">
+        <!-- Floor -->
+        <polygon points="80,260 480,260 560,215 160,215" fill="#f3f4f6" stroke="#9ca3af" stroke-width="0.5" stroke-dasharray="3 3"/>
+        <text x="86" y="276" class="dia-label" fill="#6b7280">floor</text>
+
+        <!-- Pallet -->
+        <polygon points="140,195 380,195 460,150 220,150" class="dia-body"/>
+        <polygon points="140,195 380,195 380,225 140,225" class="dia-body"/>
+        <polygon points="380,195 460,150 460,180 380,225" class="dia-body"/>
+        <text x="265" y="217" text-anchor="middle" class="dia-label">pallet</text>
+
+        <!-- Box on pallet -->
+        <polygon points="200,160 280,160 320,135 240,135" class="dia-box"/>
+        <polygon points="200,160 280,160 280,195 200,195" class="dia-box"/>
+        <polygon points="280,160 320,135 320,170 280,195" class="dia-box"/>
+        <text x="240" y="183" text-anchor="middle" class="dia-label">box</text>
+
+        <!-- Place approach point + leaders -->
+        <line x1="240" y1="160" x2="430" y2="80" class="dia-leader"/>
+        <line x1="430" y1="80" x2="430" y2="160" class="dia-leader"/>
+        <circle cx="430" cy="80" r="3.5" fill="#7c3aed"/>
+        <text x="438" y="76" class="dia-label" fill="#7c3aed">place_start</text>
+
+        <!-- palletGeoZ (pallet thickness) -->
+        <line x1="140" y1="225" x2="40" y2="262" class="dia-leader"/>
+        <text x="6" y="270" text-anchor="start" class="dia-label">pallet thickness</text>
+        <text x="6" y="282" text-anchor="start" class="dia-field">palletGeoZ</text>
+
+        <!-- boxH (box height) -->
+        <line x1="200" y1="178" x2="40" y2="125" class="dia-leader"/>
+        <text x="6" y="120" class="dia-label">box height</text>
+        <text x="6" y="132" class="dia-field">boxH</text>
+
+        <!-- placeApproachHeight (vertical dim from box top to approach pt) -->
+        <line x1="455" y1="80" x2="455" y2="160" class="dia-dim" marker-start="url(#diaArr)" marker-end="url(#diaArr)"/>
+        <text x="465" y="118" class="dia-label">approach height</text>
+        <text x="465" y="130" class="dia-field">placeApproachHeight</text>
+
+        <!-- approach angle annotation -->
+        <line x1="335" y1="120" x2="555" y2="40" class="dia-leader"/>
+        <text x="560" y="42" class="dia-label">approach angle</text>
+        <text x="560" y="54" class="dia-field">placeApproachAngleX/Y</text>
+
+        <!-- palletH (stack capacity) - dashed bar far right -->
+        <line x1="660" y1="195" x2="660" y2="60" class="dia-dim" stroke-dasharray="3 3" marker-end="url(#diaArr)"/>
+        <line x1="645" y1="195" x2="675" y2="195" class="dia-dim" stroke-dasharray="3 3"/>
+        <line x1="645" y1="60" x2="675" y2="60" class="dia-dim" stroke-dasharray="3 3"/>
+        <text x="685" y="125" class="dia-label">stack</text>
+        <text x="685" y="137" class="dia-label">capacity</text>
+        <text x="685" y="149" class="dia-field">palletH</text>
+      </svg>
+    </details>
+
+    <details class="diagram-card" open style="margin-bottom: 10px;">
+      <summary>Top view — footprint, box dims &amp; inter-box gaps</summary>
+      <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg">
+        <!-- Pallet top-down -->
+        <rect x="120" y="40" width="440" height="170" class="dia-body"/>
+        <text x="340" y="55" text-anchor="middle" class="dia-label">pallet (top)</text>
+
+        <!-- Four boxes in a 2x2 arrangement to show inter-box gaps -->
+        <!-- Row 1 -->
+        <rect x="180" y="80" width="100" height="50" class="dia-box"/>
+        <text x="230" y="110" text-anchor="middle" class="dia-label">box</text>
+        <rect x="305" y="80" width="100" height="50" class="dia-box"/>
+        <text x="355" y="110" text-anchor="middle" class="dia-label">box</text>
+        <!-- Row 2 -->
+        <rect x="180" y="155" width="100" height="50" class="dia-box"/>
+        <text x="230" y="185" text-anchor="middle" class="dia-label">box</text>
+        <rect x="305" y="155" width="100" height="50" class="dia-box"/>
+        <text x="355" y="185" text-anchor="middle" class="dia-label">box</text>
+
+        <!-- Pallet origin -->
+        <circle cx="120" cy="210" r="4" fill="#2563eb"/>
+        <text x="60" y="228" class="dia-label">pallet</text>
+        <text x="60" y="240" class="dia-label">origin</text>
+        <line x1="120" y1="210" x2="160" y2="210" class="dia-axis" marker-end="url(#diaArr)"/>
+        <text x="165" y="214" class="dia-label">+X</text>
+        <line x1="120" y1="210" x2="120" y2="175" class="dia-axis" marker-end="url(#diaArr)"/>
+        <text x="125" y="172" class="dia-label">+Y</text>
+
+        <!-- pallet width (X) -->
+        <line x1="120" y1="248" x2="560" y2="248" class="dia-dim" marker-start="url(#diaArr)" marker-end="url(#diaArr)"/>
+        <text x="340" y="258" text-anchor="middle" class="dia-label">pallet width</text>
+        <text x="412" y="258" class="dia-field">palletGeoX</text>
+
+        <!-- pallet length (Y) -->
+        <line x1="585" y1="40" x2="585" y2="210" class="dia-dim" marker-start="url(#diaArr)" marker-end="url(#diaArr)"/>
+        <text x="600" y="120" class="dia-label">pallet length</text>
+        <text x="600" y="132" class="dia-field">palletGeoY</text>
+
+        <!-- boxW (X-axis dim of one box) -->
+        <line x1="180" y1="70" x2="280" y2="70" class="dia-dim" marker-start="url(#diaArr)" marker-end="url(#diaArr)"/>
+        <text x="230" y="62" text-anchor="middle" class="dia-label">box width</text>
+        <text x="230" y="50" text-anchor="middle" class="dia-field">boxW</text>
+
+        <!-- boxL (Y-axis dim of one box) -->
+        <line x1="290" y1="80" x2="290" y2="130" class="dia-dim" marker-start="url(#diaArr)" marker-end="url(#diaArr)"/>
+        <text x="296" y="105" class="dia-label">box length</text>
+        <text x="296" y="117" class="dia-field">boxL</text>
+
+        <!-- INTER-BOX gap X (between two adjacent boxes in a row) -->
+        <line x1="280" y1="105" x2="305" y2="105" class="dia-dim" marker-start="url(#diaArr)" marker-end="url(#diaArr)"/>
+        <line x1="293" y1="103" x2="445" y2="60" class="dia-leader"/>
+        <text x="450" y="56" class="dia-label">inter-box gap (X)</text>
+        <text x="450" y="68" class="dia-field">boxOffsetX</text>
+
+        <!-- INTER-BOX gap Y (between two adjacent rows) -->
+        <line x1="230" y1="130" x2="230" y2="155" class="dia-dim" marker-start="url(#diaArr)" marker-end="url(#diaArr)"/>
+        <line x1="232" y1="143" x2="445" y2="160" class="dia-leader"/>
+        <text x="450" y="158" class="dia-label">inter-box gap (Y)</text>
+        <text x="450" y="170" class="dia-field">boxOffsetY</text>
+      </svg>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 6px;">
+        <code>boxOffsetX/Y</code> are gaps inserted <b>between adjacent boxes</b> in the pack — not pallet-edge offsets.
+        Default 0 = boxes flush to each other.
+        <code>centerOnPallet</code> distributes any leftover space as edge margins around the pack.
+        <code>rotateAlt</code> rotates every other layer 90° for interlock pack patterns.
+      </div>
+    </details>
+
+    <details class="diagram-card" open style="margin-bottom: 14px;">
+      <summary>Top view — pallet home pose</summary>
+      <svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg">
+        <!-- Pallet -->
+        <rect x="80" y="30" width="440" height="130" class="dia-body"/>
+        <text x="300" y="100" text-anchor="middle" class="dia-label">pallet (top)</text>
+
+        <!-- Origin -->
+        <circle cx="80" cy="160" r="4" fill="#2563eb"/>
+        <text x="22" y="178" class="dia-label">pallet</text>
+        <text x="22" y="190" class="dia-label">origin</text>
+        <line x1="80" y1="160" x2="120" y2="160" class="dia-axis" marker-end="url(#diaArr)"/>
+        <text x="125" y="164" class="dia-label">+X</text>
+        <line x1="80" y1="160" x2="80" y2="125" class="dia-axis" marker-end="url(#diaArr)"/>
+        <text x="86" y="122" class="dia-label">+Y</text>
+
+        <!-- Pallet home marker (cross + circle) -->
+        <circle cx="350" cy="80" r="7" fill="none" stroke="#16a34a" stroke-width="1.6"/>
+        <line x1="340" y1="80" x2="360" y2="80" stroke="#16a34a" stroke-width="1.6"/>
+        <line x1="350" y1="70" x2="350" y2="90" stroke="#16a34a" stroke-width="1.6"/>
+        <!-- theta arrow -->
+        <path d="M 366 80 A 16 16 0 0 1 348 96" stroke="#16a34a" fill="none" stroke-width="1.4" marker-end="url(#diaArr)"/>
+
+        <!-- homeX -->
+        <line x1="80" y1="180" x2="350" y2="180" class="dia-dim" marker-start="url(#diaArr)" marker-end="url(#diaArr)"/>
+        <text x="215" y="195" text-anchor="middle" class="dia-label">home X</text>
+        <text x="265" y="195" class="dia-field">homeX</text>
+
+        <!-- homeY -->
+        <line x1="60" y1="80" x2="60" y2="160" class="dia-dim" marker-start="url(#diaArr)" marker-end="url(#diaArr)"/>
+        <text x="50" y="120" text-anchor="end" class="dia-label">home Y</text>
+        <text x="50" y="132" text-anchor="end" class="dia-field">homeY</text>
+        <line x1="62" y1="80" x2="343" y2="80" class="dia-leader"/>
+
+        <!-- homeTheta callout -->
+        <line x1="372" y1="98" x2="560" y2="55" class="dia-leader"/>
+        <text x="565" y="50" class="dia-label">home theta (yaw)</text>
+        <text x="565" y="62" class="dia-field">homeTheta</text>
+
+        <!-- homeZ note -->
+        <text x="565" y="100" class="dia-label">home Z (above pallet top,</text>
+        <text x="565" y="112" class="dia-label">side-view; off-diagram)</text>
+        <text x="565" y="124" class="dia-field">homeZ</text>
+      </svg>
+    </details>
+
+    <div class="config-grid">
+      <div>
+        <div class="subcard">
+          <h3>Pallet</h3>
+          <div style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">
+            Width × length × thickness write directly to the <code>pallet</code> component's <code>frame.geometry</code> in cloud config. Drag-and-save in the Viam 3D viewer also works for the pose.
+          </div>
+          <div class="grid-3">
+            <div class="field"><label>Width (mm)</label><input id="palletGeoX" type="number" step="any" min="0" /></div>
+            <div class="field"><label>Length (mm)</label><input id="palletGeoY" type="number" step="any" min="0" /></div>
+            <div class="field"><label>Thickness (mm)</label><input id="palletGeoZ" type="number" step="any" min="0" /></div>
+          </div>
+          <div class="row" style="margin-top: 8px;">
+            <button onclick="savePalletDims()">Save Pallet Dims</button>
+            <span id="palletDimsMsg" class="flash"></span>
+          </div>
+          <div class="grid-3" style="margin-top: 12px;">
+            <div class="field"><label>Stack Height (mm)</label><input id="palletH" type="number" step="any" min="0" /></div>
+          </div>
+        </div>
+
+        <div class="subcard">
+          <h3>Box (L × W × H, mm)</h3>
+          <div class="grid-3">
+            <div class="field"><label>Length</label><input id="boxL" type="number" step="any" min="0" /></div>
+            <div class="field"><label>Width</label><input id="boxW" type="number" step="any" min="0" /></div>
+            <div class="field"><label>Height</label><input id="boxH" type="number" step="any" min="0" /></div>
+          </div>
+          <div class="grid-3" style="margin-top: 8px;">
+            <div class="field"><label>Quantity (0 = fill)</label><input id="qty" type="number" step="1" min="0" /></div>
+            <div class="field" style="grid-column: 2 / span 2;"><label>Label (optional)</label><input id="label" type="text" /></div>
+          </div>
+          <div class="row" style="margin-top: 8px;">
+            <label style="display: flex; align-items: center; gap: 6px;">
+              <input id="centerOnPallet" type="checkbox" style="margin: 0;" />
+              Center boxes on pallet
+            </label>
+          </div>
+          <div class="row" style="margin-top: 8px;">
+            <label style="display: flex; align-items: center; gap: 6px;">
+              <input id="rotateAlt" type="checkbox" style="margin: 0;" />
+              Interlock alternate layers (brickwork — requires 2:1 box, e.g. 200 × 100)
+            </label>
+          </div>
+        </div>
+
+        <div class="subcard">
+          <h3>Place Approach</h3>
+          <div style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">
+            Geometry of the angled descent onto each pallet slot.
+            <code>height</code> is the gripper's offset above the slot at the
+            start of the place; <code>angle</code> tilts that start in the
+            pallet's +X (or +Y) direction so a collision with neighbours
+            deflects the box rather than jamming it. Pallet-config clamps
+            the effective height to at least <code>box_height + 10 mm</code>
+            so the held box clears same-layer neighbours during descent.
+          </div>
+          <div class="grid-3">
+            <div class="field"><label>Approach height (mm)</label><input id="placeApproachHeight" type="number" step="any" min="0" /></div>
+            <div class="field"><label>Angle X (deg)</label><input id="placeApproachAngleX" type="number" step="any" /></div>
+            <div class="field"><label>Angle Y (deg)</label><input id="placeApproachAngleY" type="number" step="any" /></div>
+          </div>
+          <div style="font-size: 12px; color: var(--muted); margin-top: 10px;">
+            Inter-slot gaps. Pallet-config packs slots flush by default
+            (box edges touching). A few mm of gap keeps the planner's
+            collision check from flagging touching neighbours and gives
+            the descending box room to settle.
+          </div>
+          <div class="grid-3" style="margin-top: 6px;">
+            <div class="field"><label>Box offset X (mm)</label><input id="boxOffsetX" type="number" step="any" min="0" /></div>
+            <div class="field"><label>Box offset Y (mm)</label><input id="boxOffsetY" type="number" step="any" min="0" /></div>
+          </div>
+        </div>
+
+        <div class="subcard">
+          <h3>Pallet Home (arm transit pose, pallet-local mm + deg)</h3>
+          <div class="grid-3">
+            <div class="field"><label>X</label><input id="homeX" type="number" step="any" /></div>
+            <div class="field"><label>Y</label><input id="homeY" type="number" step="any" /></div>
+            <div class="field"><label>Z</label><input id="homeZ" type="number" step="any" /></div>
+          </div>
+          <div class="grid-3" style="margin-top: 8px;">
+            <div class="field"><label>Theta (deg)</label><input id="homeTheta" type="number" step="any" /></div>
+            <div class="field" style="grid-column: 2 / span 2; display: flex; align-items: flex-end;">
+              <button type="button" onclick="setHomeOppositeCorner()" style="width: 100%;">Set to opposite corner</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="subcard">
+          <h3>Calibrate Pallet from AprilTags</h3>
+          <div style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">
+            Mount two AprilTags so each tag's BL origin sits exactly on a pallet
+            top-face corner — BL tag at the pallet's BL corner, TR tag rotated 180°
+            at the pallet's TR corner. Snap reads each tag's world pose from the
+            tracker, computes the pallet pose, and writes it to the
+            <code>pallet</code> component's <code>frame.translation</code> and
+            <code>frame.orientation</code>.
+          </div>
+          <div class="grid-3">
+            <div class="field">
+              <label>Tracker resource name</label>
+              <input id="aprilTrackerName" type="text" value="apriltag-tracker" />
+            </div>
+            <div class="field"><label>BL tag id</label><input id="aprilBlTagId" type="number" step="1" min="0" value="20" /></div>
+            <div class="field"><label>TR tag id</label><input id="aprilTrTagId" type="number" step="1" min="0" value="21" /></div>
+          </div>
+          <div class="row" style="margin-top: 8px;">
+            <button class="primary" onclick="snapAprilTagPallet()">Snap from AprilTags</button>
+            <button id="aprilSaveBtn" onclick="saveAprilTagPallet()" disabled>Save to pallet</button>
+            <span id="aprilTagMsg" class="flash"></span>
+          </div>
+          <div id="aprilTagReadout" style="font-size: 12px; color: var(--muted); margin-top: 8px; white-space: pre-wrap; line-height: 1.5;"></div>
+        </div>
+      </div>
+
+      <div class="preview">
+        <canvas id="pack3dCanvas"></canvas>
+        <div class="preview-hint">drag to orbit · scroll to zoom · right-drag to pan</div>
+        <div id="packSummary" class="summary" style="margin-top: 10px;">(enter dimensions above)</div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top: 12px;">
+      <button class="primary" onclick="saveForm()">Save to machine</button>
+      <button onclick="fillFromCurrent()">Reset form to last saved</button>
+      <button onclick="refreshPreview()">Update Visual</button>
+      <span id="formMsg" class="flash"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Pallet Verification</h2>
+    <div class="row">
+      <button id="verifyBtn" class="primary" onclick="runVerifyPallet()">Verify Pallet</button>
+      <button id="verifyCancelBtn" onclick="cancelVerifyPallet()" disabled>Cancel</button>
+      <button id="verifyFullCycleBtn" onclick="runVerifyFullCycle()" title="Verify the LAST box: simulates the pallet being full of all earlier boxes, then checks the place segments AND the joint-space transit segments (pickup_home ↔ pallet_home) which the planner doesn't see.">Verify Last Box (full cycle)</button>
+      <span id="verifyStatusText" style="font-size: 13px; color: var(--muted);"></span>
+    </div>
+    <div id="verifyProgressWrap" style="display:none; margin-top: 10px;">
+      <div style="background: var(--code-bg); border: 1px solid var(--border); border-radius: 4px; height: 14px; overflow: hidden;">
+        <div id="verifyProgressBar" style="background: var(--primary); height: 100%; width: 0%; transition: width 0.15s;"></div>
+      </div>
+    </div>
+    <div id="verifyResult" class="flash" style="margin-top: 8px; white-space: pre-wrap; line-height: 1.5;"></div>
+    <div class="preview" style="margin-top: 12px;">
+      <canvas id="verify3dCanvas"></canvas>
+      <div class="preview-hint">
+        grey outlines = all pallet slots · current box in blue/green/red ·
+        grey pedestal labelled <b>ARM</b> shows the arm base side.
+        Coordinate frames mark <span style="color:#2563eb">HOME</span>,
+        <span style="color:#f59e0b">START</span>,
+        <span style="color:#ef4444">END</span>.
+        Green polyline = planned trajectory (when feasible).
+      </div>
+    </div>
+
+    <details id="animPanel" style="margin-top: 12px; border: 1px solid var(--border); border-radius: 4px; padding: 8px 10px; display: none;">
+      <summary style="cursor: pointer; font-size: 13px; font-weight: 600; color: #374151;">Full-cycle arm animation (last verify run)</summary>
+      <div style="margin-top: 8px;">
+        <div class="row" style="gap: 8px; align-items: center;">
+          <button id="animPlayBtn" type="button">▶ Play</button>
+          <input id="animScrub" type="range" min="0" max="0" value="0" style="flex: 1; min-width: 200px;" />
+          <span id="animFrameInfo" style="font: 11px ui-monospace, monospace; color: var(--muted); white-space: nowrap;">—</span>
+        </div>
+        <div class="preview" style="margin-top: 8px;">
+          <canvas id="animCanvas"></canvas>
+          <div class="preview-hint">
+            Stylized UR-shaped arm at each step of the verify cycle.
+            <span style="color:#2563eb">T1 pickup→pallet</span> · <span style="color:#16a34a">P1 pallet_home→start</span>
+            · <span style="color:#f59e0b">P2 start→end</span> · <span style="color:#dc2626">T2 pallet→pickup</span>.
+            Held box rendered in transit. Approximate skeleton (UR5e-ish dims) — for spatial intuition, not metrology.
+          </div>
+        </div>
+      </div>
+    </details>
+    <div style="font-size: 12px; color: var(--muted); margin-top: 6px;">
+      Pre-plans each box's place_start and place_end with the
+      orientation-lock constraint, starting from pallet_home_switch's
+      saved joints (no arm motion).
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Pick Station</h2>
+    <div style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">
+      Configure the inbound conveyor / fixture where boxes arrive.
+      Width × length × thickness write to the <code>pick-station</code> component's
+      <code>frame.geometry</code>. Pose can also be dragged-and-saved in the Viam 3D viewer.
+    </div>
+
+    <details class="diagram-card" open style="margin-bottom: 10px;">
+      <summary>Conveyor dims, leg height &amp; inclines (isometric)</summary>
+      <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg">
+        <!-- Floor -->
+        <polygon points="80,290 540,290 620,245 160,245" fill="#f3f4f6" stroke="#9ca3af" stroke-width="0.5" stroke-dasharray="3 3"/>
+        <text x="86" y="306" class="dia-label" fill="#6b7280">floor</text>
+
+        <!-- Station body (3 visible faces) -->
+        <polygon points="160,170 440,170 520,125 240,125" class="dia-body"/>
+        <polygon points="160,170 440,170 440,200 160,200" class="dia-body"/>
+        <polygon points="440,170 520,125 520,155 440,200" class="dia-body"/>
+        <text x="305" y="190" text-anchor="middle" class="dia-label">conveyor surface</text>
+
+        <!-- 4 legs (front-left, front-right, back-left, back-right) -->
+        <line x1="160" y1="200" x2="160" y2="290" stroke="#6b7280" stroke-width="2.5"/>
+        <line x1="440" y1="200" x2="440" y2="290" stroke="#6b7280" stroke-width="2.5"/>
+        <line x1="240" y1="125" x2="240" y2="245" stroke="#6b7280" stroke-width="2.5"/>
+        <line x1="520" y1="125" x2="520" y2="245" stroke="#6b7280" stroke-width="2.5"/>
+
+        <!-- psWidth (along front edge) -->
+        <line x1="160" y1="225" x2="440" y2="225" class="dia-dim" marker-start="url(#diaArr)" marker-end="url(#diaArr)"/>
+        <text x="300" y="240" text-anchor="middle" class="dia-label">width</text>
+        <text x="335" y="240" class="dia-field">psWidth</text>
+
+        <!-- psLength (along right edge, going back-up-right) -->
+        <line x1="450" y1="195" x2="530" y2="150" class="dia-dim" marker-start="url(#diaArr)" marker-end="url(#diaArr)"/>
+        <text x="540" y="170" class="dia-label">length</text>
+        <text x="540" y="182" class="dia-field">psLength</text>
+
+        <!-- psThickness (right edge of front face) -->
+        <line x1="448" y1="170" x2="448" y2="200" class="dia-dim" marker-start="url(#diaArr)" marker-end="url(#diaArr)"/>
+        <text x="455" y="186" class="dia-label">thickness</text>
+        <text x="455" y="198" class="dia-field">psThickness</text>
+
+        <!-- psLowestHeight (vertical leg at front-left) -->
+        <line x1="148" y1="200" x2="148" y2="290" class="dia-dim" marker-start="url(#diaArr)" marker-end="url(#diaArr)"/>
+        <text x="60" y="240" class="dia-label">lowest point</text>
+        <text x="60" y="252" class="dia-label">to floor</text>
+        <text x="60" y="264" class="dia-field">psLowestHeight</text>
+        <line x1="60" y1="248" x2="146" y2="245" class="dia-leader"/>
+
+        <!-- psPitchIncline: curved arrow rotating around the short (X / width) axis - shown at right edge -->
+        <path d="M 530 175 A 35 35 0 0 1 560 145" stroke="#7c3aed" fill="none" stroke-width="1.6" marker-end="url(#diaArr)"/>
+        <text x="565" y="135" class="dia-label">pitch incline</text>
+        <text x="565" y="147" class="dia-label">(around short / X axis)</text>
+        <text x="565" y="159" class="dia-field">psPitchIncline</text>
+
+        <!-- psRollIncline: curved arrow around the long (Y) axis - shown at front edge -->
+        <path d="M 305 215 A 30 30 0 0 0 280 248" stroke="#dc2626" fill="none" stroke-width="1.6" marker-end="url(#diaArr)"/>
+        <text x="60" y="100" class="dia-label">roll incline</text>
+        <text x="60" y="112" class="dia-label">(around long / Y axis)</text>
+        <text x="60" y="124" class="dia-field">psRollIncline</text>
+        <line x1="190" y1="118" x2="295" y2="218" class="dia-leader"/>
+      </svg>
+    </details>
+
+    <details class="diagram-card" open style="margin-bottom: 10px;">
+      <summary>Top view — box origin &amp; station yaw</summary>
+      <svg viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg">
+        <!-- Station -->
+        <rect x="120" y="40" width="440" height="150" class="dia-body"/>
+        <text x="340" y="120" text-anchor="middle" class="dia-label">pick station (top)</text>
+
+        <!-- Box on station -->
+        <rect x="170" y="80" width="120" height="80" class="dia-box"/>
+        <text x="230" y="125" text-anchor="middle" class="dia-label">box</text>
+
+        <!-- Station origin -->
+        <circle cx="120" cy="190" r="4" fill="#2563eb"/>
+        <text x="22" y="208" class="dia-label">station</text>
+        <text x="22" y="220" class="dia-label">origin (BL)</text>
+        <line x1="120" y1="190" x2="160" y2="190" class="dia-axis" marker-end="url(#diaArr)"/>
+        <text x="165" y="194" class="dia-label">+X (width)</text>
+        <line x1="120" y1="190" x2="120" y2="155" class="dia-axis" marker-end="url(#diaArr)"/>
+        <text x="125" y="152" class="dia-label">+Y (length)</text>
+
+        <!-- psBoxX -->
+        <line x1="120" y1="100" x2="170" y2="100" class="dia-dim" marker-start="url(#diaArr)" marker-end="url(#diaArr)"/>
+        <text x="145" y="95" text-anchor="middle" class="dia-label">box X</text>
+        <line x1="170" y1="98" x2="125" y2="55" class="dia-leader"/>
+        <text x="60" y="50" class="dia-label">box X (in station frame)</text>
+        <text x="60" y="62" class="dia-field">psBoxX</text>
+
+        <!-- psBoxY -->
+        <line x1="98" y1="160" x2="98" y2="190" class="dia-dim" marker-start="url(#diaArr)" marker-end="url(#diaArr)"/>
+        <line x1="98" y1="175" x2="55" y2="172" class="dia-leader"/>
+        <text x="6" y="170" class="dia-label">box Y</text>
+        <text x="6" y="182" class="dia-field">psBoxY</text>
+
+        <!-- psBoxTheta arc on the box -->
+        <path d="M 285 100 A 18 18 0 0 1 270 118" stroke="#16a34a" fill="none" stroke-width="1.4" marker-end="url(#diaArr)"/>
+        <line x1="290" y1="105" x2="600" y2="80" class="dia-leader"/>
+        <text x="605" y="78" class="dia-label">box theta (yaw on station)</text>
+        <text x="605" y="90" class="dia-field">psBoxTheta</text>
+
+        <!-- psTheta — station yaw (around vertical) - rotation arc near top -->
+        <path d="M 470 50 A 28 28 0 0 1 440 78" stroke="#dc2626" fill="none" stroke-width="1.6" marker-end="url(#diaArr)"/>
+        <line x1="470" y1="50" x2="600" y2="40" class="dia-leader"/>
+        <text x="605" y="38" class="dia-label">station yaw (around vertical)</text>
+        <text x="605" y="50" class="dia-field">psTheta</text>
+      </svg>
+    </details>
+
+    <details class="diagram-card" open style="margin-bottom: 14px;">
+      <summary>Side view — box height &amp; pick home</summary>
+      <svg viewBox="0 0 720 220" xmlns="http://www.w3.org/2000/svg">
+        <!-- Conveyor surface (side, slightly tilted to show pitch) -->
+        <g transform="rotate(-6, 360, 140)">
+          <rect x="180" y="135" width="360" height="14" class="dia-body"/>
+          <text x="360" y="146" text-anchor="middle" class="dia-label">conveyor surface (side)</text>
+
+          <!-- Box hovering above surface (psBoxZ gap) -->
+          <rect x="290" y="80" width="140" height="40" class="dia-box"/>
+          <text x="360" y="105" text-anchor="middle" class="dia-label">box</text>
+        </g>
+
+        <!-- Pick home marker -->
+        <circle cx="360" cy="40" r="4" fill="#7c3aed"/>
+        <text x="370" y="38" class="dia-label" fill="#7c3aed">pick_home</text>
+
+        <!-- psBoxZ: gap between surface top and box bottom -->
+        <line x1="510" y1="120" x2="510" y2="140" class="dia-dim" marker-start="url(#diaArr)" marker-end="url(#diaArr)"/>
+        <line x1="510" y1="130" x2="600" y2="100" class="dia-leader"/>
+        <text x="605" y="98" class="dia-label">box Z above surface</text>
+        <text x="605" y="110" class="dia-field">psBoxZ</text>
+
+        <!-- psPickHomeZ: gap between box top and pick_home -->
+        <line x1="360" y1="40" x2="360" y2="80" class="dia-dim" marker-start="url(#diaArr)" marker-end="url(#diaArr)"/>
+        <line x1="360" y1="60" x2="55" y2="60" class="dia-leader"/>
+        <text x="6" y="58" class="dia-label">pick home Z</text>
+        <text x="6" y="70" class="dia-label">(above box top)</text>
+        <text x="6" y="82" class="dia-field">psPickHomeZ</text>
+      </svg>
+    </details>
+    <div id="pickStationStatus" style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">
+      Resource: <input id="pickStationName" value="pick-station" style="font-family: ui-monospace,Menlo,monospace; padding: 2px 6px;" />
+    </div>
+
+    <div class="subcard">
+      <h3>Surface Dimensions</h3>
+      <div class="grid-3">
+        <div class="field"><label>Width (mm)</label><input id="psWidth" type="number" step="any" min="0" /></div>
+        <div class="field"><label>Length (mm)</label><input id="psLength" type="number" step="any" min="0" /></div>
+        <div class="field"><label>Thickness (mm)</label><input id="psThickness" type="number" step="any" min="0" /></div>
+      </div>
+    </div>
+
+    <div class="subcard">
+      <h3>Geometry</h3>
+      <div class="grid-3">
+        <div class="field">
+          <label>Lowest Point Height from Floor (mm)</label>
+          <input id="psLowestHeight" type="number" step="any" />
+        </div>
+        <div class="field">
+          <label>Theta (deg, around vertical Z)</label>
+          <input id="psTheta" type="number" step="any" />
+        </div>
+      </div>
+      <div style="font-size: 12px; color: var(--muted); margin-top: 10px;">
+        Conveyor tilt — pitch incline tilts the long axis up/down
+        (rotation around the short / width axis); roll incline tilts
+        the short axis side-to-side (rotation around the long / length
+        axis). Both write into <code>frame.orientation</code>.
+      </div>
+      <div class="grid-3" style="margin-top: 6px;">
+        <div class="field">
+          <label>Pitch incline (deg, around short axis)</label>
+          <input id="psPitchIncline" type="number" step="any" />
+        </div>
+        <div class="field">
+          <label>Roll incline (deg, around long axis)</label>
+          <input id="psRollIncline" type="number" step="any" />
+        </div>
+      </div>
+    </div>
+
+    <div class="subcard">
+      <h3>Box Origin</h3>
+      <div style="font-size: 12px; color: var(--muted); margin-bottom: 6px;">
+        Where the box sits on the conveyor, in the station's local frame
+        (origin at the bottom-left corner of the surface, +X along width,
+        +Y along length, Z = 0 at the top of the surface). Theta rotates
+        the box around the vertical axis; the vacuum grabs the center of
+        the box's top face.
+      </div>
+      <div class="grid-3">
+        <div class="field"><label>Box X (mm)</label><input id="psBoxX" type="number" step="any" /></div>
+        <div class="field"><label>Box Y (mm)</label><input id="psBoxY" type="number" step="any" /></div>
+        <div class="field"><label>Box Z above surface (mm)</label><input id="psBoxZ" type="number" step="any" /></div>
+      </div>
+      <div class="grid-3" style="margin-top: 8px;">
+        <div class="field"><label>Box Theta (deg)</label><input id="psBoxTheta" type="number" step="any" /></div>
+      </div>
+    </div>
+
+    <div class="subcard">
+      <h3>Pick Home</h3>
+      <div style="font-size: 12px; color: var(--muted); margin-bottom: 6px;">
+        Pre-grab waypoint: directly above the top of the box by this Z
+        offset. The arm parks here, descends to grab, then lifts back here.
+      </div>
+      <div class="grid-3">
+        <div class="field"><label>Z above box top (mm)</label><input id="psPickHomeZ" type="number" step="any" /></div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top: 10px;">
+      <button class="primary" onclick="savePickStation()">Save Pick Station</button>
+      <button onclick="reloadPickStation()">Reset from cloud</button>
+      <span id="pickStationMsg" class="flash"></span>
+    </div>
+
+    <div class="preview" style="margin-top: 12px;">
+      <canvas id="pickStation3dCanvas"></canvas>
+      <div class="preview-hint">
+        Wood = conveyor surface · grey box = a typical box at the pickup spot ·
+        coordinate frame = where the vacuum grabs (red X / green Y / blue Z) ·
+        grey pedestal labelled <b>ARM</b> shows the arm base side (drawn
+        once a world pose is known).
+      </div>
+    </div>
+
+    <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border);">
+      <h3>Verify Pick Station</h3>
+      <div style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">
+        Pre-plans the three pickup-side moves (pickup_home → grasp,
+        grasp → retract-normal, retract-normal → retract-conveyor) under
+        the same LinearConstraint runtime uses. Shows which (if any) are
+        unreachable from the configured pickup_home_switch joints.
+      </div>
+      <div class="row">
+        <button id="verifyPickBtn" class="primary" onclick="runVerifyPickStation()">Verify Pick Station</button>
+        <span id="verifyPickStatusText" style="font-size: 13px; color: var(--muted);"></span>
+      </div>
+      <div id="verifyPickResult" class="flash" style="margin-top: 8px; white-space: pre-wrap; line-height: 1.5;"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Raw JSON attributes</h2>
+    <textarea id="rawJson" placeholder='{ "pallet": "pallet", "box_length_mm": 150, ... }'></textarea>
+    <div class="row" style="margin-top: 8px;">
+      <button class="primary" onclick="saveRaw()">Apply JSON</button>
+      <button onclick="copyRawFromForm()">Sync ← form</button>
+      <span id="rawMsg" class="flash"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Per-layer view (top-down)</h2>
+    <div id="packLayers" class="layer-grid"></div>
+  </div>
+
+  <div class="card">
+    <h2>Last Response</h2>
+    <div id="responseDisplay" class="response">(none)</div>
+  </div>
+
+  <script type="module">
+    import * as VIAM from 'https://esm.sh/@viamrobotics/sdk@0.50.0';
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    let robot = null;
+    let resourceClient = null;
+    let palletizerClient = null;
+    let pickStationClient = null;
+    let robotConn = null;
+    let pickStationAttrs = {};
+    let viamClient = null;
+    let cloudInfo = null; // { machineId, partId, partName, componentName }
+    let lastAttrs = {};
+    // Placement progress fetched from pack-sequencer. done = confirmed success.
+    // The 3D view renders boxes in `done` solid and everything else as a faint
+    // wireframe outline so you see the plan fill in as the palletizer runs.
+    let progressDone = new Set();
+    let progressFailed = new Set();
+    let progressSkipped = new Set();
+    let progressPollTimer = null;
+    // Per-seq verify status overlay: seq → "testing" | "passed" | "failed".
+    // Supersedes the progress coloring in render3D for any seq it
+    // contains, so the verify sweep shows up visually in the 3D view.
+    let verifyStatus = new Map();
+    let verifyCancelled = false;
+    let verifyInProgress = false;
+    let verifyPlacementsCache = [];
+    // Detailed info for the most-recently-tested box, used by the
+    // Pallet Verification 3D view. Cleared when a new sweep starts.
+    //   { seq, status, home_pose, start_pose, end_pose, trajectory }
+    let verifyCurrentDetail = null;
+
+    function getCookie(name) {
+      const all = ('; ' + document.cookie).split('; ' + name + '=');
+      if (all.length < 2) return null;
+      return all.pop().split(';').shift();
+    }
+
+    function discoverCreds() {
+      const segments = window.location.pathname.split('/').filter(Boolean);
+      const machineKey = segments[1] || segments[0];
+      if (machineKey) {
+        const raw = getCookie(machineKey);
+        if (raw) {
+          try {
+            const parsed = JSON.parse(decodeURIComponent(raw));
+            return {
+              host: parsed.hostname || machineKey,
+              apiKeyId: parsed.apiKey?.id,
+              apiKey: parsed.apiKey?.key,
+              machineId: parsed.machineId || parsed.id || null,
+              source: 'cookie',
+            };
+          } catch (e) {
+            console.warn('Failed to parse Viam cookie:', e);
+          }
+        }
+      }
+      const params = new URLSearchParams(window.location.search);
+      const host =
+        params.get('machine_url') ||
+        params.get('host') ||
+        params.get('hostname') ||
+        (machineKey || null);
+      const apiKey = params.get('api_key') || params.get('apiKey');
+      const apiKeyId = params.get('api_key_id') || params.get('apiKeyId');
+      const machineId = params.get('machine_id') || params.get('machineId') || null;
+      if (host && apiKey && apiKeyId) {
+        return { host, apiKey, apiKeyId, machineId, source: 'url-params' };
+      }
+      return { host: host || null, source: 'incomplete' };
+    }
+
+    const conn = document.getElementById('conn');
+
+    // Derive a stable display name from a Viam machine hostname.
+    // "palletizer-test-main.abcd1234.viam.cloud" → "palletizer-test-main".
+    function machineDisplayName(host) {
+      if (!host) return null;
+      let s = String(host).trim();
+      s = s.replace(/^https?:\/\//, '').split('/')[0].split(':')[0];
+      const dot = s.indexOf('.');
+      if (dot > 0) s = s.slice(0, dot);
+      return s || null;
+    }
+
+    // Hash a string into a 32-bit unsigned integer (FNV-1a). Deterministic
+    // across reloads/sessions so a given machine always gets the same color
+    // and badge.
+    function fnv1a32(str) {
+      let h = 0x811c9dc5;
+      for (let i = 0; i < str.length; i++) {
+        h ^= str.charCodeAt(i);
+        h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+      }
+      return h >>> 0;
+    }
+
+    // Pick two display initials for the badge. Splits on '-' / '_' / ' '
+    // and takes the first letter of the first two non-empty tokens, falling
+    // back to the first two letters if there's only one token.
+    function monikerInitials(name) {
+      if (!name) return '··';
+      const parts = name.split(/[-_\s]+/).filter(Boolean);
+      if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+      const t = parts[0] || name;
+      return t.slice(0, 2).toUpperCase();
+    }
+
+    // Updates the moniker pill with a deterministic color + initials for
+    // the connected machine. Shown next to the connection status so the
+    // operator can tell at a glance which machine they're configuring.
+    function applyMachineMoniker(host, partName, machineId) {
+      const badge = document.getElementById('machineBadge');
+      const nameEl = document.getElementById('machineName');
+      const wrap = document.getElementById('machineMoniker');
+      if (!badge || !nameEl) return;
+      const display = machineDisplayName(host);
+      if (!display) {
+        badge.textContent = '··';
+        badge.style.background = '#9ca3af';
+        nameEl.textContent = 'unknown machine';
+        nameEl.classList.add('dim');
+        nameEl.removeAttribute('href');
+        return;
+      }
+      const h = fnv1a32(display);
+      const hue = h % 360;
+      const sat = 55 + (h >> 9) % 25;       // 55–79%
+      const light = 38 + (h >> 17) % 12;    // 38–49% (dark enough for white text)
+      badge.style.background = `hsl(${hue} ${sat}% ${light}%)`;
+      badge.textContent = monikerInitials(display);
+      nameEl.classList.remove('dim');
+      nameEl.textContent = partName && partName !== display
+        ? `${display} · ${partName}`
+        : display;
+      // Link to the Viam app's machine configuration page when we know
+      // the machineId. Opens in a new tab so we don't navigate away from
+      // this configurator.
+      if (machineId) {
+        nameEl.href = `https://app.viam.com/machine/${encodeURIComponent(machineId)}`;
+      } else {
+        nameEl.removeAttribute('href');
+      }
+      if (wrap) {
+        const linkHint = machineId ? ' — click to open in Viam app' : '';
+        wrap.title = `Machine: ${display}` + (partName ? ` (part: ${partName})` : '') + ` — host: ${host}` + linkHint;
+      }
+      document.title = `[${monikerInitials(display)}] ${display} – Pallet Configure`;
+    }
+
+    async function connect() {
+      conn.className = '';
+      conn.textContent = 'Connecting…';
+
+      const creds = discoverCreds();
+      if (!creds.apiKey || !creds.apiKeyId || !creds.host) {
+        conn.className = 'err';
+        conn.textContent =
+          'Missing connection credentials (host=' +
+          (creds.host || '?') +
+          ', source=' +
+          creds.source +
+          '). Open this app from the Viam app, or pass ?machine_url=...&api_key=...&api_key_id=... in the URL.';
+        return;
+      }
+
+      try {
+        robot = await VIAM.createRobotClient({
+          host: creds.host,
+          credentials: {
+            type: 'api-key',
+            authEntity: creds.apiKeyId,
+            payload: creds.apiKey,
+          },
+          signalingAddress: 'https://app.viam.com:443',
+        });
+        const name = document.getElementById('resourceName').value;
+        const Ctor = VIAM.WorldStateStoreClient;
+        if (!Ctor) throw new Error('Viam SDK: WorldStateStoreClient is not exported');
+        resourceClient = new Ctor(robot, name);
+        // Stash the robot client so per-component generic clients
+        // (pick-station, future ones) can be created on demand.
+        robotConn = robot;
+
+        // Separate client for the palletizer (generic component) so the
+        // Start/Pause/Stop/Reset buttons can dispatch DoCommand to it
+        // without touching pack-sequencer.
+        const palletizerName = document.getElementById('palletizerName').value.trim();
+        if (palletizerName) {
+          const GenCtor = VIAM.GenericComponentClient || VIAM.GenericClient;
+          if (!GenCtor) {
+            console.warn('Viam SDK: GenericComponentClient not exported; palletizer controls disabled');
+            palletizerClient = null;
+          } else {
+            palletizerClient = new GenCtor(robot, palletizerName);
+          }
+        } else {
+          palletizerClient = null;
+        }
+
+        // Spin up an App API client too so Save can write the cloud config
+        // (which is what the Viam "Configure" page shows).
+        try {
+          viamClient = await VIAM.createViamClient({
+            credentials: {
+              type: 'api-key',
+              authEntity: creds.apiKeyId,
+              payload: creds.apiKey,
+            },
+          });
+          cloudInfo = { machineId: creds.machineId, partId: null, partName: null, componentName: name };
+          if (creds.machineId) {
+            const parts = await viamClient.appClient.getRobotParts(creds.machineId);
+            const main = parts.find((p) => p.mainPart) || parts[0];
+            if (main) {
+              cloudInfo.partId = main.id;
+              cloudInfo.partName = main.name;
+            }
+          }
+        } catch (e) {
+          console.warn('Viam App client unavailable:', e);
+          viamClient = null;
+          cloudInfo = null;
+        }
+
+        conn.className = 'ok';
+        const cloudMsg = cloudInfo?.partId ? ' [cloud:on]' : ' [cloud:off — DoCommand only]';
+        conn.textContent =
+          '● Connected to ' + creds.host + ' as "' + name + '" (' + creds.source + ')' + cloudMsg;
+        applyMachineMoniker(creds.host, cloudInfo?.partName, creds.machineId || cloudInfo?.machineId);
+        loadAll();
+
+        // Start polling pack-sequencer for placement progress so the 3D view
+        // fills in as the palletizer confirms each seq.
+        if (progressPollTimer) clearInterval(progressPollTimer);
+        refreshProgress();
+        progressPollTimer = setInterval(refreshProgress, 1500);
+
+        // Start polling the palletizer for state-machine status so the
+        // state flow visual lights up the active state in real time.
+        renderStateFlow();
+        if (palletizerStatusTimer) clearInterval(palletizerStatusTimer);
+        refreshPalletizerStatus();
+        palletizerStatusTimer = setInterval(refreshPalletizerStatus, 500);
+      } catch (e) {
+        conn.className = 'err';
+        conn.textContent = 'Connection error: ' + (e?.message || e);
+      }
+    }
+
+    window.reconnect = connect;
+
+    async function doCommand(cmd) {
+      const out = document.getElementById('responseDisplay');
+      if (!resourceClient) {
+        out.className = 'err-msg';
+        out.textContent = 'Not connected — click Reconnect.';
+        throw new Error('not connected');
+      }
+      try {
+        // The Viam SDK's doCommand takes a google.protobuf.Struct. Wrapping with
+        // Struct.fromJson makes sure nested objects survive serialization.
+        const payload = VIAM.Struct && VIAM.Struct.fromJson ? VIAM.Struct.fromJson(cmd) : cmd;
+        const result = await resourceClient.doCommand(payload);
+        out.className = 'response';
+        out.textContent =
+          '> ' + JSON.stringify(cmd) + '\n' + JSON.stringify(result, null, 2);
+        return result;
+      } catch (e) {
+        out.className = 'err-msg';
+        out.textContent = (e?.message || e) + '';
+        throw e;
+      }
+    }
+
+    // ─── Palletizer state-machine flow visual ─────────────────────────────
+    // Order matches the state machine in module.go. Arrows render between
+    // groups (pickup → transit → place → return → terminal) for readability.
+    const STATE_FLOW = [
+      { state: 'IDLE', label: 'IDLE' },
+      { arrow: true },
+      { state: 'MOVING_TO_PICKUP_HOME', label: '→ PICKUP_HOME' },
+      { state: 'VISION_CHECK',          label: 'VISION CHECK' },
+      { state: 'ENABLING_VACUUM',       label: 'VACUUM ON' },
+      { state: 'GRASPING',              label: 'GRASP' },
+      { state: 'CHECKING_SUCTION',      label: 'CHECK SEAL' },
+      { state: 'RETRACTING_NORMAL',     label: 'RETRACT ↑' },
+      { state: 'RETRACTING_CONVEYOR',   label: 'RETRACT →' },
+      { arrow: true },
+      { state: 'MOVING_TO_PALLET_HOME', label: '→ PALLET_HOME' },
+      { state: 'MOVING_TO_PLACE_START', label: 'PLACE_START' },
+      { state: 'MOVING_TO_PLACE_END',   label: 'PLACE_END' },
+      { state: 'RELEASING',             label: 'RELEASE' },
+      { state: 'LIFTING',               label: 'LIFT' },
+      { arrow: true },
+      { state: 'RETURNING_TO_PALLET_HOME',  label: '↩ PALLET_HOME' },
+      { state: 'RETURNING_TO_PICKUP_HOME',  label: '↩ PICKUP_HOME' },
+      { arrow: true },
+      { state: 'PALLET_COMPLETE', label: 'COMPLETE' },
+      { state: 'ERROR',           label: 'ERROR' },
+    ];
+
+    function renderStateFlow() {
+      const container = document.getElementById('stateFlow');
+      if (!container || container.dataset.rendered === '1') return;
+      container.innerHTML = '';
+      for (const item of STATE_FLOW) {
+        if (item.arrow) {
+          const sep = document.createElement('span');
+          sep.className = 'state-flow-arrow';
+          sep.textContent = '·';
+          container.appendChild(sep);
+        } else {
+          const pill = document.createElement('div');
+          pill.className = 'state-pill';
+          pill.dataset.state = item.state;
+          pill.textContent = item.label;
+          container.appendChild(pill);
+        }
+      }
+      container.dataset.rendered = '1';
+    }
+
+    function highlightState(activeState) {
+      renderStateFlow();
+      const pills = document.querySelectorAll('#stateFlow .state-pill');
+      pills.forEach((el) => {
+        el.classList.remove('active', 'terminal-complete', 'terminal-error');
+        if (el.dataset.state !== activeState) return;
+        if (activeState === 'PALLET_COMPLETE') {
+          el.classList.add('terminal-complete');
+        } else if (activeState === 'ERROR') {
+          el.classList.add('terminal-error');
+        } else {
+          el.classList.add('active');
+        }
+      });
+    }
+
+    let palletizerStatusTimer = null;
+    async function refreshPalletizerStatus() {
+      const statusEl = document.getElementById('stateFlowStatus');
+      if (!palletizerClient) {
+        if (statusEl) statusEl.textContent = '(palletizer not connected)';
+        return;
+      }
+      try {
+        const payload = VIAM.Struct && VIAM.Struct.fromJson
+          ? VIAM.Struct.fromJson({ status: true })
+          : { status: true };
+        const r = (await palletizerClient.doCommand(payload)) || {};
+        if (r.state) highlightState(r.state);
+        if (statusEl) {
+          const bits = [];
+          if (r.running) bits.push('running');
+          if (typeof r.cycle_count === 'number') bits.push('cycle ' + r.cycle_count);
+          if (r.last_error) bits.push('err: ' + r.last_error);
+          statusEl.textContent = bits.length ? '(' + bits.join(' · ') + ')' : '';
+        }
+      } catch (e) {
+        if (statusEl) statusEl.textContent = '(status error: ' + (e?.message || e) + ')';
+      }
+    }
+
+    async function palletizerCommand(cmd) {
+      const out = document.getElementById('responseDisplay');
+      if (!palletizerClient) {
+        flash('palletizerMsg', 'err', 'palletizer not connected — set name & reconnect');
+        return;
+      }
+      try {
+        const payload = VIAM.Struct && VIAM.Struct.fromJson ? VIAM.Struct.fromJson(cmd) : cmd;
+        const result = await palletizerClient.doCommand(payload);
+        out.className = 'response';
+        out.textContent =
+          '> palletizer ' + JSON.stringify(cmd) + '\n' + JSON.stringify(result, null, 2);
+        const action = Object.keys(cmd)[0] || 'command';
+        flash('palletizerMsg', 'ok', '✓ ' + action);
+        return result;
+      } catch (e) {
+        flash('palletizerMsg', 'err', '✗ ' + (e?.message || e));
+        out.className = 'err-msg';
+        out.textContent = (e?.message || e) + '';
+      }
+    }
+    window.palletizerCommand = palletizerCommand;
+
+    async function runVerifyPallet() {
+      if (verifyInProgress) return;
+      if (!palletizerClient) {
+        flash('palletizerMsg', 'err', 'palletizer not connected — set name & reconnect');
+        return;
+      }
+      // Pull the latest pack order directly from pack-sequencer so we're
+      // scanning the same seq set the palletizer will use at runtime.
+      let placements = verifyPlacementsCache;
+      try {
+        const packResp = await doCommand({ get_pack_order: true });
+        placements = packResp?.placements || placements;
+      } catch (e) {
+        // fall through with the cached set
+      }
+      if (!placements || placements.length === 0) {
+        setVerifyResult('err', 'No boxes to verify — configure pallet/box dims first.');
+        return;
+      }
+
+      verifyInProgress = true;
+      verifyCancelled = false;
+      verifyStatus = new Map();
+      verifyCurrentDetail = null;
+      document.getElementById('verifyBtn').disabled = true;
+      document.getElementById('verifyCancelBtn').disabled = false;
+      document.getElementById('verifyProgressWrap').style.display = 'block';
+      setVerifyProgress(0, placements.length);
+      setVerifyStatusText('Preparing…');
+      clearVerifyResult();
+      refreshPreview();
+      renderVerify3D();
+
+      let passed = 0, failed = 0;
+      const failures = [];
+
+      const worldToPallet = buildWorldToPalletTransform();
+
+      for (let i = 0; i < placements.length; i++) {
+        if (verifyCancelled) break;
+        const p = placements[i];
+        verifyStatus.set(p.seq, 'testing');
+
+        // Pre-compute place_start / place_end poses directly in pallet
+        // frame so the START and END coordinate frames are visible
+        // during the blue "testing" phase, before the RPC returns.
+        // home_pose requires FK on arm joints, so it stays null until
+        // the server responds.
+        const localStartEnd = computeStartEndLocal(p);
+        verifyCurrentDetail = {
+          seq: p.seq,
+          status: 'testing',
+          start_local: localStartEnd.start,
+          end_local: localStartEnd.end,
+          home_local: null,
+          trajectory_local: null,
+        };
+        setVerifyStatusText(`Testing box ${p.seq} (${i + 1} / ${placements.length})…`);
+        renderVerify3D();
+
+        let ok = false, errMsg = '';
+        let details = null;
+        try {
+          const cmd = { verify_pallet: true, seq: p.seq };
+          const payload = VIAM.Struct && VIAM.Struct.fromJson ? VIAM.Struct.fromJson(cmd) : cmd;
+          const result = await palletizerClient.doCommand(payload);
+          if (result && Array.isArray(result.results) && result.results.length > 0) {
+            const r = result.results[0];
+            details = r;
+            ok = r.start_feasible && r.end_feasible;
+            if (!ok) {
+              errMsg = (r.summary
+                || r.start_error_friendly
+                || r.end_error_friendly
+                || r.start_error
+                || r.end_error
+                || 'infeasible').toString();
+            }
+          } else {
+            errMsg = 'empty verify result';
+          }
+        } catch (e) {
+          errMsg = (e?.message || e) + '';
+        }
+
+        if (ok) {
+          verifyStatus.set(p.seq, 'passed');
+          passed++;
+        } else {
+          verifyStatus.set(p.seq, 'failed');
+          failed++;
+          failures.push({ seq: p.seq, err: errMsg });
+        }
+        // Fold the server's world-frame poses into pallet-local frame
+        // so renderVerify3D can draw them directly alongside the
+        // client-computed start/end.
+        verifyCurrentDetail = {
+          seq: p.seq,
+          status: ok ? 'passed' : 'failed',
+          start_local: worldToPallet(details?.start_pose) || localStartEnd.start,
+          end_local: worldToPallet(details?.end_pose) || localStartEnd.end,
+          home_local: worldToPallet(details?.home_pose),
+          trajectory_local: Array.isArray(details?.trajectory)
+            ? details.trajectory.map((t) => worldToPallet(t)).filter((t) => t)
+            : null,
+        };
+        setVerifyProgress(i + 1, placements.length);
+        renderVerify3D();
+
+        // Brief pause so the user can read the green/red + HOME frame
+        // + trajectory before the sweep advances to the next box.
+        if (i < placements.length - 1 && !verifyCancelled) {
+          await new Promise((resolve) => setTimeout(resolve, 400));
+        }
+      }
+
+      verifyInProgress = false;
+      document.getElementById('verifyBtn').disabled = false;
+      document.getElementById('verifyCancelBtn').disabled = true;
+
+      if (verifyCancelled) {
+        setVerifyStatusText(`Cancelled after ${passed + failed} of ${placements.length}.`);
+        setVerifyResult('err', `Scan cancelled — ${passed} passed, ${failed} failed.`);
+      } else if (failed === 0) {
+        setVerifyStatusText(`Scanned ${placements.length} / ${placements.length}.`);
+        setVerifyResult('ok', `✓ Scan Finished, Box Placement Passed (${passed}/${placements.length}).`);
+      } else {
+        // Group failures by error reason so twelve slots failing for
+        // the same reason show up as one line instead of twelve
+        // near-identical ones.
+        const byReason = new Map();
+        for (const f of failures) {
+          const key = f.err;
+          if (!byReason.has(key)) byReason.set(key, []);
+          byReason.get(key).push(f.seq);
+        }
+        const lines = [];
+        for (const [reason, seqs] of byReason) {
+          const seqList = seqs.length <= 6
+            ? `#${seqs.join(', #')}`
+            : `#${seqs.slice(0, 6).join(', #')} (+${seqs.length - 6} more)`;
+          lines.push(`${seqList} — ${reason}`);
+        }
+        setVerifyStatusText(`Scanned ${placements.length} / ${placements.length}.`);
+        setVerifyResult('err',
+          `✗ Scan Finished, Box Placement Failed (${failed} of ${placements.length} unreachable).\n` +
+          lines.join('\n'));
+      }
+    }
+    window.runVerifyPallet = runVerifyPallet;
+
+    // Last-box full-cycle verify. Sends {verify_pallet, full_cycle} which
+    // checks the joint-space transits (pickup_home ↔ pallet_home) by
+    // sampled FK in addition to the planner segments. Output is a list
+    // of segments with per-segment ok/error/collisions.
+    async function runVerifyFullCycle() {
+      const btn = document.getElementById('verifyFullCycleBtn');
+      if (!palletizerClient) {
+        setVerifyResult('err', '✗ palletizer client not connected');
+        return;
+      }
+      btn.disabled = true;
+      setVerifyStatusText('full-cycle: planning…');
+      clearVerifyResult();
+      try {
+        const cmd = { verify_pallet: true, full_cycle: true };
+        const payload = VIAM.Struct && VIAM.Struct.fromJson ? VIAM.Struct.fromJson(cmd) : cmd;
+        const result = (await palletizerClient.doCommand(payload)) || {};
+        const segments = Array.isArray(result.segments) ? result.segments : [];
+        const seq = result.seq;
+        const placed = result.placed_count;
+        const allPass = !!result.all_pass;
+
+        const lines = [`Last-box full cycle (seq ${seq}, ${placed} hypothetical placed before it):`];
+        for (const s of segments) {
+          const mark = s.ok ? '✓' : '✗';
+          let line = `  ${mark} ${s.step}`;
+          if (!s.ok && s.summary) line += ` — ${s.summary}`;
+          else if (!s.ok && s.error) line += ` — ${s.error}`;
+          else if (s.note) line += ` — ${s.note}`;
+          lines.push(line);
+          if (Array.isArray(s.collisions) && s.collisions.length > 0) {
+            for (const c of s.collisions) {
+              lines.push(`      · ${c.arm_link} ↔ ${c.obstacle} at sample t=${(c.first_sample_t || 0).toFixed(2)}`);
+            }
+          }
+        }
+
+        if (allPass) {
+          setVerifyStatusText(`✓ full cycle clean (seq ${seq})`);
+          setVerifyResult('ok', lines.join('\n'));
+        } else {
+          setVerifyStatusText(`✗ full cycle has collisions (seq ${seq})`);
+          setVerifyResult('err', lines.join('\n'));
+        }
+
+        // Hand off to the animation panel — it captures the joint paths the
+        // server returned and renders the cycle on a stylized arm so the
+        // operator can scrub through what the planner actually saw.
+        loadAnimData(result);
+      } catch (e) {
+        setVerifyStatusText('error');
+        setVerifyResult('err', '✗ ' + (e?.message || e));
+      } finally {
+        btn.disabled = false;
+      }
+    }
+    window.runVerifyFullCycle = runVerifyFullCycle;
+
+    // ─── Verify Full-cycle arm animation ──────────────────────────────────
+    // Renders an approximate UR-shaped skeleton at each step of the
+    // verify_full_cycle joint trajectory, with a scrub slider + play
+    // button. UR5e DH dims used as a starting point; UR7e is close enough
+    // for spatial intuition but not metrology. The actual rdk planner
+    // uses URDF kinematics — this view is for the operator to SEE what
+    // the planner saw, not to do collision checking client-side.
+    const UR_DIMS = { d1: 163, a2: 425, a3: 392, d4: 133, d5: 100, d6: 100 };
+    const GRIPPER_OFFSET_MM = 196; // matches vacuum_gripper.frame.translation.z
+
+    let animState = {
+      segments: [],
+      totalFrames: 0,
+      currentFrame: 0,
+      playing: false,
+      playRAF: null,
+      threeState: null,
+      skel: null,
+      heldBoxMesh: null,
+      placedBoxesGroup: null,
+      lastSeq: -1,
+    };
+
+    // Build the stylized UR skeleton as a Three.js Object3D hierarchy.
+    // Joint axes and link lengths are approximate; setArmJoints() rotates
+    // each subgroup to apply joint angles in this convention:
+    //   j0: Z (base pan)        j3: Y (wrist 1 pitch)
+    //   j1: Y (shoulder lift)   j4: Z (wrist 2 yaw)
+    //   j2: Y (elbow)            j5: Y (wrist 3 pitch)
+    function buildArmSkeleton() {
+      const linkMat = new THREE.MeshLambertMaterial({ color: 0x6b7280 });
+      const jointMat = new THREE.MeshLambertMaterial({ color: 0x9ca3af });
+      const gripperMat = new THREE.MeshLambertMaterial({ color: 0x4b5563 });
+      function jointSphere(r) { return new THREE.Mesh(new THREE.SphereGeometry(r, 16, 12), jointMat); }
+      function linkCyl(len, r) {
+        const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 16), linkMat);
+        m.position.y = len / 2;
+        return m;
+      }
+
+      const root = new THREE.Group();
+
+      // Base ring (visible at world origin)
+      const baseRing = new THREE.Mesh(new THREE.CylinderGeometry(80, 90, 30, 24), linkMat);
+      baseRing.rotation.x = Math.PI / 2;
+      baseRing.position.z = -15;
+      root.add(baseRing);
+
+      // J0 — vertical axis pan
+      const j0 = new THREE.Group();
+      root.add(j0);
+      // Shoulder column from base up to d1
+      const shoulder = new THREE.Mesh(new THREE.CylinderGeometry(60, 60, UR_DIMS.d1, 24), linkMat);
+      shoulder.rotation.x = Math.PI / 2; // axis Y → Z
+      shoulder.position.z = UR_DIMS.d1 / 2;
+      j0.add(shoulder);
+
+      // J1 at top of shoulder, pitch axis along the local Y (which is world Y after J0=0)
+      const j1 = new THREE.Group();
+      j1.position.z = UR_DIMS.d1;
+      j0.add(j1);
+      j1.add(jointSphere(70));
+      // Upper arm extends along local +X by a2
+      const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(50, 50, UR_DIMS.a2, 16), linkMat);
+      upperArm.rotation.z = Math.PI / 2; // axis Y → +X
+      upperArm.position.x = UR_DIMS.a2 / 2;
+      j1.add(upperArm);
+
+      // J2 at end of upper arm
+      const j2 = new THREE.Group();
+      j2.position.x = UR_DIMS.a2;
+      j1.add(j2);
+      j2.add(jointSphere(50));
+      const forearm = new THREE.Mesh(new THREE.CylinderGeometry(40, 40, UR_DIMS.a3, 16), linkMat);
+      forearm.rotation.z = Math.PI / 2;
+      forearm.position.x = UR_DIMS.a3 / 2;
+      j2.add(forearm);
+
+      // J3 at end of forearm
+      const j3 = new THREE.Group();
+      j3.position.x = UR_DIMS.a3;
+      j2.add(j3);
+      j3.add(jointSphere(38));
+
+      // Wrist 1 perpendicular offset along -Y
+      const wrist1Cyl = new THREE.Mesh(new THREE.CylinderGeometry(32, 32, UR_DIMS.d4, 16), linkMat);
+      wrist1Cyl.position.y = -UR_DIMS.d4 / 2;
+      j3.add(wrist1Cyl);
+
+      // J4 at end of wrist 1
+      const j4 = new THREE.Group();
+      j4.position.y = -UR_DIMS.d4;
+      j3.add(j4);
+      j4.add(jointSphere(33));
+      // Wrist 2 segment along local +Z
+      const wrist2Cyl = new THREE.Mesh(new THREE.CylinderGeometry(30, 30, UR_DIMS.d5, 16), linkMat);
+      wrist2Cyl.rotation.x = Math.PI / 2;
+      wrist2Cyl.position.z = UR_DIMS.d5 / 2;
+      j4.add(wrist2Cyl);
+
+      // J5 at end of wrist 2
+      const j5 = new THREE.Group();
+      j5.position.z = UR_DIMS.d5;
+      j4.add(j5);
+      j5.add(jointSphere(33));
+      // Flange along -Y
+      const flange = new THREE.Mesh(new THREE.CylinderGeometry(35, 35, UR_DIMS.d6, 16), linkMat);
+      flange.position.y = -UR_DIMS.d6 / 2;
+      j5.add(flange);
+
+      // Flange end frame (where gripper attaches)
+      const flangeEnd = new THREE.Group();
+      flangeEnd.position.y = -UR_DIMS.d6;
+      j5.add(flangeEnd);
+      // Gripper stand-off cylinder
+      const gripperCyl = new THREE.Mesh(new THREE.CylinderGeometry(40, 40, GRIPPER_OFFSET_MM, 16), gripperMat);
+      gripperCyl.position.y = -GRIPPER_OFFSET_MM / 2;
+      flangeEnd.add(gripperCyl);
+      // Gripper tip frame (held box attaches here, oriented along -Y in flangeEnd's frame)
+      const gripperTip = new THREE.Group();
+      gripperTip.position.y = -GRIPPER_OFFSET_MM;
+      flangeEnd.add(gripperTip);
+
+      return { root, j0, j1, j2, j3, j4, j5, gripperTip };
+    }
+
+    function setArmJoints(skel, joints) {
+      if (!skel || !joints || joints.length < 6) return;
+      skel.j0.rotation.set(0, 0, joints[0]);
+      skel.j1.rotation.set(0, joints[1], 0);
+      skel.j2.rotation.set(0, joints[2], 0);
+      skel.j3.rotation.set(0, joints[3], 0);
+      skel.j4.rotation.set(0, 0, joints[4]);
+      skel.j5.rotation.set(0, joints[5], 0);
+    }
+
+    function frameToSegmentStep(globalFrame) {
+      let acc = 0;
+      for (let i = 0; i < animState.segments.length; i++) {
+        const len = (animState.segments[i].joint_path || []).length;
+        if (globalFrame < acc + len) return { segIdx: i, stepIdx: globalFrame - acc };
+        acc += len;
+      }
+      return { segIdx: animState.segments.length - 1, stepIdx: 0 };
+    }
+
+    function renderAnimFrame() {
+      if (!animState.threeState || !animState.skel) return;
+      const { segIdx, stepIdx } = frameToSegmentStep(animState.currentFrame);
+      const seg = animState.segments[segIdx];
+      if (!seg) return;
+      const path = seg.joint_path || [];
+      const joints = path[Math.min(stepIdx, path.length - 1)];
+      if (!joints) return;
+      setArmJoints(animState.skel, joints);
+      if (animState.heldBoxMesh) animState.heldBoxMesh.visible = !!seg.held_box;
+
+      const info = document.getElementById('animFrameInfo');
+      if (info) {
+        const tag = (seg.step || '').split(':')[0] || `seg${segIdx + 1}`;
+        info.textContent = `${tag} · step ${stepIdx + 1}/${path.length} · ${seg.ok ? 'ok' : (seg.summary || 'fail')}`;
+      }
+    }
+
+    function buildPlacedBoxesForAnim(throughSeq) {
+      // Reuses verifyPlacementsCache + palletPoseWorld (already populated).
+      if (!animState.placedBoxesGroup) return;
+      while (animState.placedBoxesGroup.children.length) {
+        animState.placedBoxesGroup.remove(animState.placedBoxesGroup.children[0]);
+      }
+      if (!Array.isArray(verifyPlacementsCache) || !palletPoseWorld) return;
+      for (const pl of verifyPlacementsCache) {
+        if (pl.seq >= throughSeq) continue;
+        const placedPose = ovPoseToThree(pl.pose_in_world);
+        if (!placedPose) continue;
+        const w = Number(pl.width_mm) || 0;
+        const l = Number(pl.length_mm) || 0;
+        const h = Number(pl.height_mm) || 0;
+        if (!w || !l || !h) continue;
+        const halfDown = new THREE.Vector3(0, 0, -h / 2).applyQuaternion(placedPose.quaternion);
+        const center = placedPose.position.clone().add(halfDown);
+        const layer = Number(pl.layer) || 0;
+        const hue = (210 + layer * 47) % 360;
+        const geo = new THREE.BoxGeometry(w, l, h);
+        const mat = new THREE.MeshLambertMaterial({ color: new THREE.Color(`hsl(${hue}, 60%, 58%)`) });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.copy(center);
+        mesh.quaternion.copy(placedPose.quaternion);
+        animState.placedBoxesGroup.add(mesh);
+        const edges = new THREE.LineSegments(
+          new THREE.EdgesGeometry(geo),
+          new THREE.LineBasicMaterial({ color: 0x1f2937 })
+        );
+        edges.position.copy(center);
+        edges.quaternion.copy(placedPose.quaternion);
+        animState.placedBoxesGroup.add(edges);
+      }
+    }
+
+    function ensureAnimScene() {
+      if (animState.threeState) return animState.threeState;
+      const canvas = document.getElementById('animCanvas');
+      if (!canvas) return null;
+      const state = ensureThree(canvas);
+      // Floor
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(4000, 4000),
+        new THREE.MeshLambertMaterial({ color: 0xe5e7eb, side: THREE.DoubleSide })
+      );
+      floor.position.set(0, 0, -900);
+      state.contentGroup.add(floor);
+
+      // Pallet wood
+      if (palletPoseWorld) {
+        const corner = ovPoseToThree(palletPoseWorld);
+        if (corner && palletInfo.widthMM && palletInfo.lengthMM) {
+          const halfOffset = new THREE.Vector3(
+            palletInfo.widthMM / 2, palletInfo.lengthMM / 2, -palletInfo.thicknessMM / 2
+          ).applyQuaternion(corner.quaternion);
+          const center = corner.position.clone().add(halfOffset);
+          const geo = new THREE.BoxGeometry(palletInfo.widthMM, palletInfo.lengthMM, palletInfo.thicknessMM);
+          const mat = new THREE.MeshLambertMaterial({ color: 0xa16a3a });
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.position.copy(center);
+          mesh.quaternion.copy(corner.quaternion);
+          state.contentGroup.add(mesh);
+        }
+      }
+
+      // Skeleton
+      const skel = buildArmSkeleton();
+      state.contentGroup.add(skel.root);
+
+      // Placed boxes group (filled in by buildPlacedBoxesForAnim per seq)
+      const placedGroup = new THREE.Group();
+      state.contentGroup.add(placedGroup);
+
+      // Camera framing
+      state.camera.position.set(1500, -1700, 1100);
+      state.controls.target.set(0, 0, 200);
+      state.controls.update();
+
+      animState.threeState = state;
+      animState.skel = skel;
+      animState.placedBoxesGroup = placedGroup;
+      return state;
+    }
+
+    function loadAnimData(verifyResp) {
+      const segs = (verifyResp.segments || []).filter(s => Array.isArray(s.joint_path) && s.joint_path.length > 0);
+      const panel = document.getElementById('animPanel');
+      if (segs.length === 0) {
+        if (panel) panel.style.display = 'none';
+        return;
+      }
+      animState.segments = segs;
+      animState.totalFrames = segs.reduce((sum, s) => sum + s.joint_path.length, 0);
+      animState.currentFrame = 0;
+      animState.lastSeq = Number(verifyResp.seq) || -1;
+
+      if (panel) {
+        panel.style.display = 'block';
+        panel.open = true;
+      }
+      const slider = document.getElementById('animScrub');
+      if (slider) {
+        slider.max = String(animState.totalFrames - 1);
+        slider.value = '0';
+      }
+
+      ensureAnimScene();
+
+      // Held-box mesh (attach to gripper tip) — sized from current pack config.
+      if (animState.skel && lastAttrs && !animState.heldBoxMesh) {
+        const w = Number(lastAttrs.box_width_mm) || 100;
+        const l = Number(lastAttrs.box_length_mm) || 100;
+        const h = Number(lastAttrs.box_height_mm) || 80;
+        const geo = new THREE.BoxGeometry(w, l, h);
+        const mat = new THREE.MeshLambertMaterial({ color: 0x9ca3af, transparent: true, opacity: 0.7 });
+        const mesh = new THREE.Mesh(geo, mat);
+        // Tip frame's local axes: -Y points "down" away from gripper. Box
+        // sits centered at -h/2 along that axis.
+        mesh.position.set(0, -h / 2, 0);
+        mesh.rotation.x = Math.PI / 2; // Box X aligns with tip frame X (world-ish)
+        animState.skel.gripperTip.add(mesh);
+        animState.heldBoxMesh = mesh;
+      }
+
+      // Placed obstacles up to (but not including) the verified seq.
+      const through = animState.lastSeq > 0 ? animState.lastSeq : 1;
+      buildPlacedBoxesForAnim(through);
+
+      renderAnimFrame();
+    }
+
+    document.addEventListener('input', (e) => {
+      if (e.target && e.target.id === 'animScrub') {
+        animState.currentFrame = Number(e.target.value);
+        renderAnimFrame();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (e.target && e.target.id === 'animPlayBtn') {
+        const btn = e.target;
+        if (animState.playing) {
+          animState.playing = false;
+          btn.textContent = '▶ Play';
+          if (animState.playRAF) cancelAnimationFrame(animState.playRAF);
+          animState.playRAF = null;
+        } else if (animState.totalFrames > 0) {
+          animState.playing = true;
+          btn.textContent = '⏸ Pause';
+          let lastTime = performance.now();
+          const fps = 30;
+          const tick = (now) => {
+            if (!animState.playing) return;
+            if (now - lastTime > 1000 / fps) {
+              lastTime = now;
+              animState.currentFrame = (animState.currentFrame + 1) % animState.totalFrames;
+              const slider = document.getElementById('animScrub');
+              if (slider) slider.value = String(animState.currentFrame);
+              renderAnimFrame();
+            }
+            animState.playRAF = requestAnimationFrame(tick);
+          };
+          animState.playRAF = requestAnimationFrame(tick);
+        }
+      }
+    });
+
+    async function runVerifyPickStation() {
+      const btn = document.getElementById('verifyPickBtn');
+      const statusEl = document.getElementById('verifyPickStatusText');
+      const resultEl = document.getElementById('verifyPickResult');
+      const setStatus = (t) => { if (statusEl) statusEl.textContent = t; };
+      const setResult = (kind, text) => {
+        if (!resultEl) return;
+        resultEl.className = 'flash show ' + kind;
+        resultEl.textContent = text;
+      };
+      if (!palletizerClient) {
+        setResult('err', '✗ palletizer client not connected');
+        return;
+      }
+      btn.disabled = true;
+      setStatus('planning…');
+      setResult('', '');
+      try {
+        const cmd = { verify_pick_station: true };
+        const payload = VIAM.Struct && VIAM.Struct.fromJson ? VIAM.Struct.fromJson(cmd) : cmd;
+        const result = (await palletizerClient.doCommand(payload)) || {};
+        const results = Array.isArray(result.results) ? result.results : [];
+        const allPass = !!result.all_pass;
+        const lines = [];
+        for (const r of results) {
+          const mark = r.feasible ? '✓' : '✗';
+          let line = `${mark} ${r.step}`;
+          if (!r.feasible) {
+            line += ` — ${(r.summary || r.error || 'infeasible').toString()}`;
+          }
+          lines.push(line);
+        }
+        const startSrc = result.start_source ? ` (from ${result.start_source})` : '';
+        if (allPass) {
+          setStatus(`✓ all ${results.length} moves planned${startSrc}`);
+          setResult('ok', `Pick Station Verified${startSrc}\n` + lines.join('\n'));
+        } else {
+          const failed = results.filter((r) => !r.feasible).length;
+          setStatus(`✗ ${failed} of ${results.length} unreachable${startSrc}`);
+          setResult('err', `Pick Station Verification Failed${startSrc}\n` + lines.join('\n'));
+        }
+      } catch (e) {
+        setStatus('error');
+        setResult('err', '✗ ' + (e?.message || e));
+      } finally {
+        btn.disabled = false;
+      }
+    }
+    window.runVerifyPickStation = runVerifyPickStation;
+
+    function cancelVerifyPallet() {
+      if (!verifyInProgress) return;
+      verifyCancelled = true;
+      document.getElementById('verifyCancelBtn').disabled = true;
+    }
+    window.cancelVerifyPallet = cancelVerifyPallet;
+
+    function setVerifyProgress(done, total) {
+      const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+      document.getElementById('verifyProgressBar').style.width = pct + '%';
+    }
+    function setVerifyStatusText(s) {
+      document.getElementById('verifyStatusText').textContent = s;
+    }
+    function setVerifyResult(kind, text) {
+      const el = document.getElementById('verifyResult');
+      el.className = 'flash show ' + kind;
+      el.textContent = text;
+    }
+    function clearVerifyResult() {
+      const el = document.getElementById('verifyResult');
+      el.className = 'flash';
+      el.textContent = '';
+    }
+
+    function fillFormFromAttrs(a) {
+      document.getElementById('palletH').value = a.pallet_area_height_mm ?? '';
+      document.getElementById('boxL').value = a.box_length_mm ?? '';
+      document.getElementById('boxW').value = a.box_width_mm ?? '';
+      document.getElementById('boxH').value = a.box_height_mm ?? '';
+      document.getElementById('qty').value = a.quantity ?? '';
+      document.getElementById('label').value = a.label ?? '';
+      document.getElementById('rotateAlt').checked = !!a.rotate_alternate_layers;
+      document.getElementById('centerOnPallet').checked = !!a.center_on_pallet;
+      document.getElementById('placeApproachHeight').value = a.place_approach_height_mm ?? '';
+      document.getElementById('placeApproachAngleX').value = a.place_approach_angle_deg ?? '';
+      document.getElementById('placeApproachAngleY').value = a.place_approach_angle_y_deg ?? '';
+      document.getElementById('boxOffsetX').value = a.box_offset_x_mm ?? '';
+      document.getElementById('boxOffsetY').value = a.box_offset_y_mm ?? '';
+      const ph = a.pallet_home || {};
+      document.getElementById('homeX').value = ph.x ?? '';
+      document.getElementById('homeY').value = ph.y ?? '';
+      document.getElementById('homeZ').value = ph.z ?? '';
+      document.getElementById('homeTheta').value = ph.theta ?? '';
+      document.getElementById('rawJson').value = JSON.stringify(a, null, 2);
+    }
+
+    function attrsFromForm() {
+      const num = (id) => {
+        const v = document.getElementById(id).value;
+        return v === '' ? 0 : Number(v);
+      };
+      const str = (id) => document.getElementById(id).value || '';
+      const hasVal = (id) => document.getElementById(id).value !== '';
+      // Spread lastAttrs first so fields the form doesn't expose
+      // (pallet_origin, place_orientation, place_approach_*, etc) survive
+      // a Save instead of being wiped to defaults. The server's apply()
+      // does a full struct replace; sending only form values would clobber
+      // every unexposed field.
+      const out = { ...(lastAttrs || {}) };
+      out.pallet_area_height_mm = num('palletH');
+      out.box_length_mm = num('boxL');
+      out.box_width_mm = num('boxW');
+      out.box_height_mm = num('boxH');
+      out.quantity = Math.round(num('qty'));
+      const lbl = str('label');
+      if (lbl) out.label = lbl; else delete out.label;
+      out.rotate_alternate_layers = !!document.getElementById('rotateAlt').checked;
+      out.center_on_pallet = !!document.getElementById('centerOnPallet').checked;
+      if (hasVal('placeApproachHeight')) out.place_approach_height_mm = num('placeApproachHeight');
+      if (hasVal('placeApproachAngleX')) out.place_approach_angle_deg = num('placeApproachAngleX');
+      if (hasVal('placeApproachAngleY')) out.place_approach_angle_y_deg = num('placeApproachAngleY');
+      if (hasVal('boxOffsetX')) out.box_offset_x_mm = num('boxOffsetX');
+      if (hasVal('boxOffsetY')) out.box_offset_y_mm = num('boxOffsetY');
+      if (hasVal('homeX') || hasVal('homeY') || hasVal('homeZ') || hasVal('homeTheta')) {
+        out.pallet_home = {
+          x: num('homeX'), y: num('homeY'), z: num('homeZ'),
+          o_x: 0, o_y: 0, o_z: -1, theta: num('homeTheta'),
+        };
+      } else {
+        delete out.pallet_home;
+      }
+      return out;
+    }
+
+    // Fills the pallet_home inputs with the far corner of the pallet at
+    // a safe transit Z. Pulls dimensions from the cached palletInfo
+    // (populated from each get_pack_order response) since the form no
+    // longer carries them.
+    window.setHomeOppositeCorner = () => {
+      document.getElementById('homeX').value = palletInfo.widthMM || 0;
+      document.getElementById('homeY').value = palletInfo.lengthMM || 0;
+      document.getElementById('homeZ').value = 200;
+      document.getElementById('homeTheta').value = 0;
+      refreshPreview();
+    };
+
+    // Fetch the robot_config object for the main part and locate our component.
+    // Returns { cfg, component, part } or throws.
+    async function fetchCloudConfig() {
+      if (!viamClient || !cloudInfo?.partId) {
+        throw new Error('cloud client not available (missing machineId or App API access)');
+      }
+      const resp = await viamClient.appClient.getRobotPart(cloudInfo.partId);
+      const part = resp.part || resp;
+      // robotConfig is a proto-es Struct; .toJson() yields a plain JS object.
+      const cfg = part.robotConfig ? part.robotConfig.toJson() : {};
+      const target = document.getElementById('resourceName').value;
+      // pack-sequencer is now a world_state_store service — look under services.
+      // Fall back to components for back-compat with older configs.
+      const svcs = Array.isArray(cfg.services) ? cfg.services : [];
+      const comps = Array.isArray(cfg.components) ? cfg.components : [];
+      const component = svcs.find((c) => c && c.name === target)
+        || comps.find((c) => c && c.name === target);
+      return { cfg, component, part, componentName: target };
+    }
+
+    async function readCloudAttrs() {
+      const { component, componentName } = await fetchCloudConfig();
+      if (!component) throw new Error(`resource "${componentName}" not found in cloud config`);
+      return component.attributes || {};
+    }
+
+    async function writeCloudAttrs(attrs) {
+      const { cfg, component, part, componentName } = await fetchCloudConfig();
+      if (!component) throw new Error(`resource "${componentName}" not found in cloud config`);
+      component.attributes = attrs;
+      await viamClient.appClient.updateRobotPart(part.id, part.name, VIAM.Struct.fromJson(cfg));
+    }
+
+    // writePalletGeometry updates the pallet component's frame.geometry
+    // {x,y,z} block in the cloud config. The pallet component name comes
+    // from pack-sequencer's `pallet` attribute. Reconfigure cascades to
+    // pack-sequencer because pallet is a declared dependency.
+    async function writePalletGeometry({ widthMM, lengthMM, thicknessMM }) {
+      if (!viamClient || !cloudInfo?.partId) {
+        throw new Error('cloud client not available');
+      }
+      const palletName = (lastAttrs && lastAttrs.pallet) || 'pallet';
+      const resp = await viamClient.appClient.getRobotPart(cloudInfo.partId);
+      const part = resp.part || resp;
+      const cfg = part.robotConfig ? part.robotConfig.toJson() : {};
+      const comps = Array.isArray(cfg.components) ? cfg.components : [];
+      const palletComp = comps.find((c) => c && c.name === palletName);
+      if (!palletComp) {
+        throw new Error(`pallet component "${palletName}" not found in cloud config`);
+      }
+      const frame = palletComp.frame || (palletComp.frame = {});
+      const geom = frame.geometry || (frame.geometry = { type: 'box' });
+      geom.type = 'box';
+      geom.x = widthMM;
+      geom.y = lengthMM;
+      geom.z = thicknessMM;
+      await viamClient.appClient.updateRobotPart(part.id, part.name, VIAM.Struct.fromJson(cfg));
+    }
+
+    // writePalletPose updates the pallet component's frame.translation
+    // and frame.orientation in cloud config. yawDeg becomes a pure
+    // ov_degrees rotation around world Z (roll/pitch stay zero —
+    // matches the flat-pallet assumption in snapAprilTagPallet).
+    async function writePalletPose({ xMM, yMM, zMM, yawDeg }) {
+      if (!viamClient || !cloudInfo?.partId) {
+        throw new Error('cloud client not available');
+      }
+      const palletName = (lastAttrs && lastAttrs.pallet) || 'pallet';
+      const resp = await viamClient.appClient.getRobotPart(cloudInfo.partId);
+      const part = resp.part || resp;
+      const cfg = part.robotConfig ? part.robotConfig.toJson() : {};
+      const comps = Array.isArray(cfg.components) ? cfg.components : [];
+      const palletComp = comps.find((c) => c && c.name === palletName);
+      if (!palletComp) {
+        throw new Error(`pallet component "${palletName}" not found in cloud config`);
+      }
+      const frame = palletComp.frame || (palletComp.frame = {});
+      frame.translation = { x: round3(xMM), y: round3(yMM), z: round3(zMM) };
+      frame.orientation = eulerZYXToOvDegrees(0, 0, yawDeg);
+      await viamClient.appClient.updateRobotPart(part.id, part.name, VIAM.Struct.fromJson(cfg));
+    }
+
+    // ─── AprilTag pallet calibration ──────────────────────────────────────
+    // Tags are placed so each tag's BL origin sits on a pallet top-face
+    // corner: BL tag at pallet BL, TR tag (rotated 180°) at pallet TR.
+    // From those two world positions we get the pallet position (BL tag)
+    // and the pallet yaw (diagonal angle minus the W/L diagonal angle).
+    // Roll/pitch are assumed zero (flat pallet); add a tilt option later
+    // if needed.
+    let pendingAprilTagPose = null;
+
+    function setAprilSaveEnabled(enabled) {
+      const btn = document.getElementById('aprilSaveBtn');
+      if (btn) btn.disabled = !enabled;
+    }
+
+    async function fetchTagWorldOrigin(trackerClient, tagId) {
+      const cmd = { command: 'get_pose', tag_id: tagId };
+      const payload = VIAM.Struct && VIAM.Struct.fromJson ? VIAM.Struct.fromJson(cmd) : cmd;
+      const resp = (await trackerClient.doCommand(payload)) || {};
+      if (!resp.origin || !resp.origin.world_frame) {
+        throw new Error(
+          `tag ${tagId}: tracker returned no world-frame origin pose ` +
+          `(check that the motion service is wired in the tracker config and the tag is currently in view)`
+        );
+      }
+      return resp.origin.world_frame; // {x,y,z,o_x,o_y,o_z,theta} mm + ov_degrees
+    }
+
+    window.snapAprilTagPallet = async () => {
+      if (!robotConn) {
+        flash('aprilTagMsg', 'err', '✗ not connected to machine', 4000);
+        return;
+      }
+      const trackerName = (document.getElementById('aprilTrackerName').value || '').trim();
+      if (!trackerName) {
+        flash('aprilTagMsg', 'err', '✗ tracker resource name required', 4000);
+        return;
+      }
+      const blId = Number(document.getElementById('aprilBlTagId').value);
+      const trId = Number(document.getElementById('aprilTrTagId').value);
+      if (!Number.isFinite(blId) || !Number.isFinite(trId) || blId === trId) {
+        flash('aprilTagMsg', 'err', '✗ BL and TR tag ids must be different integers', 4000);
+        return;
+      }
+      const widthMM = palletInfo.widthMM;
+      const lengthMM = palletInfo.lengthMM;
+      if (!(widthMM > 0) || !(lengthMM > 0)) {
+        flash('aprilTagMsg', 'err', '✗ pallet width and length must be set first', 4000);
+        return;
+      }
+
+      try {
+        // Tracker is a world_state_store service — same client type
+        // pack-sequencer uses. doCommand is exposed on the same client.
+        const Ctor = VIAM.WorldStateStoreClient;
+        if (!Ctor) throw new Error('Viam SDK: WorldStateStoreClient is not exported');
+        const trackerClient = new Ctor(robotConn, trackerName);
+
+        const [blPose, trPose] = await Promise.all([
+          fetchTagWorldOrigin(trackerClient, blId),
+          fetchTagWorldOrigin(trackerClient, trId),
+        ]);
+
+        // Pallet position = BL tag world origin (already at pallet BL).
+        // Pallet yaw: diagonal vector BL→TR in pallet-local is (W, L);
+        // its angle is atan2(L, W). Subtracting it from the world-frame
+        // diagonal angle gives the pallet's yaw.
+        const dx = trPose.x - blPose.x;
+        const dy = trPose.y - blPose.y;
+        const diagWorld = Math.atan2(dy, dx);
+        const diagLocal = Math.atan2(lengthMM, widthMM);
+        const yawDeg = ((diagWorld - diagLocal) * 180 / Math.PI);
+        // Wrap to (-180, 180].
+        const yawWrapped = ((((yawDeg + 180) % 360) + 360) % 360) - 180;
+
+        // Sanity: BL→TR world distance should match pallet diagonal
+        // length within a few mm; warn if off by more than 10 mm or 5%.
+        const measured = Math.hypot(dx, dy);
+        const expected = Math.hypot(widthMM, lengthMM);
+        const diagErr = Math.abs(measured - expected);
+        const diagErrFrac = expected > 0 ? diagErr / expected : 0;
+        const diagWarn = (diagErr > 10 && diagErrFrac > 0.05)
+          ? `\n⚠ diagonal length mismatch: measured ${measured.toFixed(1)} mm, expected ${expected.toFixed(1)} mm — check pallet W/L or tag placement.`
+          : '';
+
+        pendingAprilTagPose = {
+          xMM: blPose.x,
+          yMM: blPose.y,
+          zMM: blPose.z,
+          yawDeg: yawWrapped,
+        };
+        setAprilSaveEnabled(true);
+
+        const fmt = (n) => Number(n).toFixed(2);
+        document.getElementById('aprilTagReadout').textContent =
+          `BL tag (${blId}) world origin: (${fmt(blPose.x)}, ${fmt(blPose.y)}, ${fmt(blPose.z)}) mm\n` +
+          `TR tag (${trId}) world origin: (${fmt(trPose.x)}, ${fmt(trPose.y)}, ${fmt(trPose.z)}) mm\n` +
+          `→ pallet pose: (${fmt(blPose.x)}, ${fmt(blPose.y)}, ${fmt(blPose.z)}) mm, yaw ${fmt(yawWrapped)}°` +
+          diagWarn;
+        flash('aprilTagMsg', 'ok', '✓ Snap captured — review and Save');
+      } catch (e) {
+        pendingAprilTagPose = null;
+        setAprilSaveEnabled(false);
+        document.getElementById('aprilTagReadout').textContent = '';
+        flash('aprilTagMsg', 'err', '✗ ' + (e?.message || e), 8000);
+      }
+    };
+
+    window.saveAprilTagPallet = async () => {
+      if (!pendingAprilTagPose) {
+        flash('aprilTagMsg', 'err', '✗ snap first', 3000);
+        return;
+      }
+      try {
+        await writePalletPose(pendingAprilTagPose);
+        flash('aprilTagMsg', 'ok', '✓ Saved (pallet will reconfigure)');
+        pendingAprilTagPose = null;
+        setAprilSaveEnabled(false);
+        // Refresh pallet info so subsequent visualizations pick up the
+        // new world pose.
+        setTimeout(() => { refreshPreview(); }, 1500);
+      } catch (e) {
+        flash('aprilTagMsg', 'err', '✗ ' + (e?.message || e), 8000);
+      }
+    };
+
+    // ─── Pick Station ─────────────────────────────────────────────────────
+    // eulerZYXToOvDegrees converts Tait-Bryan ZYX intrinsic Euler
+    // angles (yaw around Z, pitch around Y', roll around X'') in
+    // DEGREES into the Viam ov_degrees orientation representation:
+    // (x, y, z) is the local Z axis in world coords, `th` is the
+    // twist around that Z axis in degrees. Used by Save Pick Station
+    // because Viam's 3D viewer renders ov_degrees natively while
+    // euler_angles rendered wrong during testing.
+    function eulerZYXToOvDegrees(rollDeg, pitchDeg, yawDeg) {
+      const toRad = (d) => d * Math.PI / 180;
+      const roll = toRad(rollDeg), pitch = toRad(pitchDeg), yaw = toRad(yawDeg);
+      // Quaternion from ZYX Tait-Bryan (same formula as Viam's
+      // EulerAngles.Quaternion): q = q_yaw * q_pitch * q_roll.
+      const cy = Math.cos(yaw / 2), sy = Math.sin(yaw / 2);
+      const cp = Math.cos(pitch / 2), sp = Math.sin(pitch / 2);
+      const cr = Math.cos(roll / 2), sr = Math.sin(roll / 2);
+      const qw = cr*cp*cy + sr*sp*sy;
+      const qx = sr*cp*cy - cr*sp*sy;
+      const qy = cr*sp*cy + sr*cp*sy;
+      const qz = cr*cp*sy - sr*sp*cy;
+      // Local Z axis in world = q * (0,0,1) * q^-1.
+      const ox = 2 * (qx*qz + qw*qy);
+      const oy = 2 * (qy*qz - qw*qx);
+      const oz = 1 - 2 * (qx*qx + qy*qy);
+      // Theta: extract the twist around the local Z axis. In the ov
+      // ZYZ decomposition, after applying the lon/lat rotations that
+      // orient local Z to (ox,oy,oz), the residual is a pure Z-axis
+      // rotation whose angle is theta. For the common
+      // pitch=0 case this simplifies to yaw, but we compute it
+      // generally in case pitch is ever non-zero.
+      const lat = Math.acos(Math.max(-1, Math.min(1, oz)));
+      const lon = (1 - Math.abs(oz) > 1e-6) ? Math.atan2(oy, ox) : 0;
+      // Build q_lonlat = R_z(lon) * R_y(lat)
+      const clat = Math.cos(lat / 2), slat = Math.sin(lat / 2);
+      const clon = Math.cos(lon / 2), slon = Math.sin(lon / 2);
+      // R_y(lat): (cos(lat/2), 0, sin(lat/2), 0)
+      // R_z(lon): (cos(lon/2), 0, 0, sin(lon/2))
+      // q_lonlat = R_z * R_y — Hamilton product:
+      const lw = clon*clat;
+      const lx = clon*0 - slon*0;   // = 0
+      const ly = clon*slat;
+      const lz = slon*clat;
+      // q_theta = q_lonlat^-1 * q_total.
+      // q_lonlat^-1 = conj(q_lonlat) since unit quat.
+      const iw = lw, ix = -lx, iy = -ly, iz = -lz;
+      // Hamilton product (iw,ix,iy,iz) * (qw,qx,qy,qz):
+      const tw = iw*qw - ix*qx - iy*qy - iz*qz;
+      const tz = iw*qz + ix*qy - iy*qx + iz*qw;
+      // For a pure Z-axis rotation, theta = 2 * atan2(tz, tw).
+      const thetaRad = 2 * Math.atan2(tz, tw);
+      return {
+        type: 'ov_degrees',
+        value: {
+          x: ox, y: oy, z: oz,
+          th: thetaRad * 180 / Math.PI,
+        },
+      };
+    }
+
+    // round3 clamps numeric values to 3 decimal places (thousandths).
+    // Keeps form inputs / readouts from showing float-jitter garbage
+    // like 5.684341886e-14 or 0.2617993877991494.
+    function round3(n) {
+      if (typeof n !== 'number' || !isFinite(n)) return n;
+      return Math.round(n * 1000) / 1000;
+    }
+
+    function fetchPickStationResource() {
+      const name = document.getElementById('pickStationName').value || 'pick-station';
+      if (!robotConn) throw new Error('not connected to machine');
+      if (!pickStationClient || pickStationClient._name !== name) {
+        const GenCtor = VIAM.GenericComponentClient || VIAM.GenericClient;
+        if (!GenCtor) throw new Error('Viam SDK: GenericComponentClient not exported');
+        pickStationClient = new GenCtor(robotConn, name);
+        pickStationClient._name = name;
+      }
+      return pickStationClient;
+    }
+
+    async function reloadPickStation(silent) {
+      try {
+        const client = fetchPickStationResource();
+        const cmd = { get_attributes: true };
+        const payload = VIAM.Struct && VIAM.Struct.fromJson ? VIAM.Struct.fromJson(cmd) : cmd;
+        const r = (await client.doCommand(payload)) || {};
+        pickStationAttrs = r;
+        // Dev hook: expose to window so the console can inspect what
+        // reloadPickStation actually received. Useful when the World
+        // Scene render disagrees with the Viam app's 3D scene.
+        window.__pickStationAttrs = r;
+        const v = r.box_origin_offset_mm || {};
+        const setVal = (id, val) => {
+          const el = document.getElementById(id);
+          if (!el || document.activeElement === el) return;
+          // Clamp numeric values to 3 decimals so inputs don't fill
+          // with float noise (e.g. 5.684e-14 or 0.26179938...).
+          el.value = (typeof val === 'number') ? round3(val) : (val ?? '');
+        };
+        setVal('psWidth', r.width_mm);
+        setVal('psLength', r.length_mm);
+        setVal('psThickness', r.thickness_mm);
+        setVal('psLowestHeight', r.lowest_point_height_mm);
+        setVal('psPitchIncline', r.pitch_incline_deg);
+        setVal('psRollIncline', r.roll_incline_deg);
+        setVal('psTheta', r.yaw_deg);
+        setVal('psBoxX', v.x);
+        setVal('psBoxY', v.y);
+        setVal('psBoxZ', v.z);
+        setVal('psBoxTheta', r.box_theta_deg);
+        setVal('psPickHomeZ', r.pick_home_z_offset_mm);
+        const status = document.getElementById('pickStationStatus');
+        if (status && r.pose) {
+          const stationName = document.getElementById('pickStationName').value;
+          status.innerHTML = `Resource: <input id="pickStationName" value="${stationName}" style="font-family: ui-monospace,Menlo,monospace; padding: 2px 6px;" /> &nbsp; Pose (world): (${round3(r.pose.x)}, ${round3(r.pose.y)}, ${round3(r.pose.z)}) mm`;
+        }
+        renderPickStation3D();
+        renderWorld3D();
+      } catch (e) {
+        if (!silent) flash('pickStationMsg', 'err', '✗ ' + (e?.message || e), 4000);
+        else console.warn('reloadPickStation:', e);
+      }
+    }
+
+    window.reloadPickStation = () => reloadPickStation(false);
+
+    // savePickStation writes the pick-station component's frame.geometry
+    // {x,y,z} block AND its attributes to cloud config in one
+    // updateRobotPart call. Reconfigure cascades naturally.
+    window.savePickStation = async () => {
+      if (!viamClient || !cloudInfo?.partId) {
+        flash('pickStationMsg', 'err', '✗ cloud client not available', 4000);
+        return;
+      }
+      const num = (id) => Number(document.getElementById(id).value) || 0;
+      const hasVal = (id) => document.getElementById(id).value !== '';
+      const stationName = document.getElementById('pickStationName').value || 'pick-station';
+
+      const widthMM = num('psWidth');
+      const lengthMM = num('psLength');
+      const thicknessMM = num('psThickness');
+      if (widthMM <= 0 || lengthMM <= 0 || thicknessMM <= 0) {
+        flash('pickStationMsg', 'err', '✗ width/length/thickness must be > 0', 4000);
+        return;
+      }
+
+      // Spread previously-loaded attrs first so any field the form
+      // doesn't expose survives the round-trip.
+      const newAttrs = { ...(pickStationAttrs || {}) };
+      // Strip computed readouts that aren't real config fields. Both
+      // inclines and yaw live on frame.orientation, not attributes;
+      // they're surfaced as readouts so the webapp can preserve them
+      // on save.
+      delete newAttrs.width_mm;
+      delete newAttrs.length_mm;
+      delete newAttrs.thickness_mm;
+      delete newAttrs.pose;
+      delete newAttrs.pickup_pose;
+      delete newAttrs.pitch_incline_deg;
+      delete newAttrs.roll_incline_deg;
+      delete newAttrs.yaw_deg;
+      // Strip legacy readouts that older module versions emitted.
+      delete newAttrs.incline_deg;
+      delete newAttrs.vacuum_pickup_offset_mm;
+      if (hasVal('psLowestHeight')) newAttrs.lowest_point_height_mm = num('psLowestHeight');
+      if (hasVal('psBoxX') || hasVal('psBoxY') || hasVal('psBoxZ')) {
+        newAttrs.box_origin_offset_mm = {
+          x: num('psBoxX'), y: num('psBoxY'), z: num('psBoxZ'),
+        };
+      }
+      if (hasVal('psBoxTheta')) newAttrs.box_theta_deg = num('psBoxTheta');
+      if (hasVal('psPickHomeZ')) newAttrs.pick_home_z_offset_mm = num('psPickHomeZ');
+
+      // Pitch incline (around short / X axis) + roll incline (around
+      // long / Y axis) + theta (around vertical Z) all write into
+      // frame.orientation, composed as ZYX Tait-Bryan and converted
+      // to ov_degrees for the Viam viewer (euler_angles didn't render
+      // correctly in the viewer during testing). In Tait-Bryan terms:
+      // pitch_incline = roll component, roll_incline = pitch
+      // component — see the pick_station.go doc-comment for why the
+      // user-facing names invert the math names.
+      const pitchInclineDeg = hasVal('psPitchIncline')
+        ? num('psPitchIncline')
+        : Number(pickStationAttrs.pitch_incline_deg)
+          ?? Number(pickStationAttrs.incline_deg)   // legacy attr name
+          ?? 0;
+      const rollInclineDeg = hasVal('psRollIncline')
+        ? num('psRollIncline')
+        : Number(pickStationAttrs.roll_incline_deg) || 0;
+      const yawDeg = hasVal('psTheta') ? num('psTheta') : Number(pickStationAttrs.yaw_deg) || 0;
+
+      try {
+        const resp = await viamClient.appClient.getRobotPart(cloudInfo.partId);
+        const part = resp.part || resp;
+        const cfg = part.robotConfig ? part.robotConfig.toJson() : {};
+        const comps = Array.isArray(cfg.components) ? cfg.components : [];
+        const stationComp = comps.find((c) => c && c.name === stationName);
+        if (!stationComp) {
+          throw new Error(`pick-station component "${stationName}" not found in cloud config`);
+        }
+        const frame = stationComp.frame || (stationComp.frame = {});
+        const geom = frame.geometry || (frame.geometry = { type: 'box' });
+        geom.type = 'box';
+        geom.x = widthMM;
+        geom.y = lengthMM;
+        geom.z = thicknessMM;
+        // Write both inclines + yaw as ov_degrees — the format the
+        // Viam 3D viewer renders natively. eulerZYXToOvDegrees signature
+        // is (rollDeg, pitchDeg, yawDeg) where roll = around X, pitch
+        // = around Y, yaw = around Z. Map our user-facing names:
+        // pitch_incline → math roll (around X = short axis), roll_incline
+        // → math pitch (around Y = long axis).
+        frame.orientation = eulerZYXToOvDegrees(pitchInclineDeg, rollInclineDeg, yawDeg);
+        stationComp.attributes = newAttrs;
+        await viamClient.appClient.updateRobotPart(part.id, part.name, VIAM.Struct.fromJson(cfg));
+        flash('pickStationMsg', 'ok', '✓ Saved (pick-station will reconfigure)');
+        // Refresh from runtime once the reconfigure has settled.
+        setTimeout(() => reloadPickStation(true), 1500);
+      } catch (e) {
+        flash('pickStationMsg', 'err', '✗ ' + (e?.message || e), 6000);
+      }
+    };
+
+    window.savePalletDims = async () => {
+      const num = (id) => Number(document.getElementById(id).value) || 0;
+      const dims = {
+        widthMM: num('palletGeoX'),
+        lengthMM: num('palletGeoY'),
+        thicknessMM: num('palletGeoZ'),
+      };
+      if (dims.widthMM <= 0 || dims.lengthMM <= 0 || dims.thicknessMM <= 0) {
+        flash('palletDimsMsg', 'err', '✗ all three dimensions must be > 0', 4000);
+        return;
+      }
+      try {
+        await writePalletGeometry(dims);
+        flash('palletDimsMsg', 'ok', '✓ Saved (pallet will reconfigure)');
+      } catch (e) {
+        flash('palletDimsMsg', 'err', '✗ ' + (e?.message || e), 6000);
+      }
+    };
+
+    function flash(id, kind, text, timeoutMs = 2500) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.className = 'flash show ' + kind;
+      el.textContent = text;
+      clearTimeout(el._t);
+      el._t = setTimeout(() => { el.className = 'flash'; el.textContent = ''; }, timeoutMs);
+    }
+
+    async function saveAttrs(attrs, msgId) {
+      // Cloud is the source of truth. The module uses AlwaysRebuild, so the
+      // UpdateRobotPart call will kick a reconfigure. DoCommand is a belt-and-
+      // suspenders sync so pack-order reflects the change before the rebuild
+      // completes (and also covers cloud-less runs).
+      let cloudOK = false;
+      if (viamClient && cloudInfo?.partId) {
+        try {
+          await writeCloudAttrs(attrs);
+          cloudOK = true;
+        } catch (e) {
+          flash(msgId, 'err', '✗ cloud: ' + (e?.message || e), 6000);
+        }
+      }
+      try {
+        const r = await doCommand({ set_attributes: attrs });
+        lastAttrs = r?.attributes || attrs;
+        fillFormFromAttrs(lastAttrs);
+        refreshPreview();
+        if (cloudOK) {
+          flash(msgId, 'ok', '✓ Saved to cloud config (module will reload)');
+        } else if (viamClient && cloudInfo?.partId) {
+          // Cloud write already flashed its own error — the DoCommand still
+          // hit runtime, so note that half succeeded.
+          flash(msgId, 'err', '✗ runtime updated but cloud write failed', 6000);
+        } else {
+          flash(msgId, 'ok', '✓ Saved (runtime only — cloud unavailable)');
+        }
+      } catch (e) {
+        flash(msgId, 'err', '✗ ' + (e?.message || e), 5000);
+      }
+    }
+
+    // ─── client-side pack order (mirrors the Go algorithm in module.go) ─────
+    // The webapp previews the effect of the form values *before* saving. We
+    // keep it numerically identical to the server's packOrder so the preview
+    // matches what the module will compute post-save.
+
+    function computePackFromAttrs(a) {
+      const thick = palletInfo.thicknessMM;
+      const boxL = +a.box_length_mm || 0;
+      const boxW = +a.box_width_mm || 0;
+      const boxH = +a.box_height_mm || 0;
+      const palletL = palletInfo.lengthMM;
+      const palletW = palletInfo.widthMM;
+      const palletH = +a.pallet_area_height_mm || 0;
+      const quantity = Math.max(0, Math.floor(+a.quantity || 0));
+      const label = a.label || '';
+      const rotate = !!a.rotate_alternate_layers;
+      const centered = !!a.center_on_pallet;
+      const gapX = Math.max(0, +a.box_offset_x_mm || 0);
+      const gapY = Math.max(0, +a.box_offset_y_mm || 0);
+
+      const empty = (mode = 'column', warnings = []) => ({
+        placements: [], cols: 0, rows: 0, layers: 0, capacity: 0,
+        quantity, overflow: 0, mode, warnings,
+        pallet_width_mm: palletW, pallet_length_mm: palletL, pallet_thickness_mm: thick,
+      });
+      if (boxL <= 0 || boxW <= 0 || boxH <= 0) return empty();
+      const layers = Math.floor(palletH / boxH);
+      if (layers < 1) return empty();
+
+      let warnings = [];
+      if (rotate) {
+        const long = Math.max(boxL, boxW);
+        const short = Math.min(boxL, boxW);
+        if (short > 0 && Math.abs(long - 2 * short) <= 0.5) {
+          return packInterlockJS({ boxH, palletL, palletW, quantity, label, layers, long, short, thick, centered });
+        }
+        warnings.push(
+          `rotate_alternate_layers requires a 2:1 box (got ${boxL.toFixed(1)} × ${boxW.toFixed(1)}, ratio ${(long / short).toFixed(3)}); ` +
+          `using column stack instead — rotating non-2:1 boxes would leave upper boxes unsupported`
+        );
+      }
+      return packColumnJS({ boxL, boxW, boxH, palletL, palletW, quantity, label, layers, warnings, thick, centered, gapX, gapY });
+    }
+
+    function packColumnJS({ boxL, boxW, boxH, palletL, palletW, quantity, label, layers, warnings, thick, centered, gapX = 0, gapY = 0 }) {
+      const base = { quantity, mode: 'column', warnings,
+        pallet_width_mm: palletW, pallet_length_mm: palletL, pallet_thickness_mm: thick };
+      if (boxW <= 0 || boxL <= 0) return { ...base, placements: [], cols: 0, rows: 0, layers, capacity: 0, overflow: 0 };
+      const pitchX = boxW + gapX;
+      const pitchY = boxL + gapY;
+      const cols = Math.floor((palletW - boxW) / pitchX) + 1;
+      const rows = Math.floor((palletL - boxL) / pitchY) + 1;
+      if (cols < 1 || rows < 1) return { ...base, placements: [], cols, rows, layers, capacity: 0, overflow: 0 };
+      const capacity = cols * rows * layers;
+      let n = quantity;
+      if (n <= 0 || n > capacity) n = capacity;
+      const spanX = cols * boxW + (cols - 1) * gapX;
+      const spanY = rows * boxL + (rows - 1) * gapY;
+      const offX = centered ? (palletW - spanX) / 2 : 0;
+      const offY = centered ? (palletL - spanY) / 2 : 0;
+      const placements = [];
+      let seq = 1;
+      for (let layer = 0; layer < layers && seq <= n; layer++) {
+        for (let row = 0; row < rows && seq <= n; row++) {
+          for (let col = 0; col < cols && seq <= n; col++) {
+            placements.push({
+              seq, col, row, layer,
+              x_mm: offX + col * pitchX + boxW / 2,
+              y_mm: offY + row * pitchY + boxL / 2,
+              z_mm: layer * boxH + boxH,
+              label,
+              width_mm: boxW,
+              length_mm: boxL,
+              height_mm: boxH,
+            });
+            seq++;
+          }
+        }
+      }
+      const overflow = quantity > capacity ? quantity - capacity : 0;
+      return { ...base, placements, cols, rows, layers, capacity, overflow };
+    }
+
+    function packInterlockJS({ boxH, palletL, palletW, quantity, label, layers, long, short, thick, centered }) {
+      const base = { quantity, mode: 'interlock_2x1',
+        pallet_width_mm: palletW, pallet_length_mm: palletL, pallet_thickness_mm: thick };
+      const tileCols = Math.floor(palletW / long);
+      const tileRows = Math.floor(palletL / long);
+      if (tileCols < 1 || tileRows < 1) {
+        return {
+          ...base, placements: [], cols: 0, rows: 0, layers, capacity: 0, overflow: 0,
+          warnings: [`pallet ${palletW.toFixed(1)} × ${palletL.toFixed(1)} too small for 2:1 interlock tile ${long.toFixed(1)} × ${long.toFixed(1)}; need at least one full tile`],
+        };
+      }
+      const perLayer = tileCols * tileRows * 2;
+      const capacity = perLayer * layers;
+      const cols = tileCols * 2;
+      const rows = tileRows;
+      let n = quantity;
+      if (n <= 0 || n > capacity) n = capacity;
+      const offX = centered ? (palletW - tileCols * long) / 2 : 0;
+      const offY = centered ? (palletL - tileRows * long) / 2 : 0;
+      const placements = [];
+      let seq = 1;
+      for (let layer = 0; layer < layers && seq <= n; layer++) {
+        const patternA = layer % 2 === 0;
+        for (let tr = 0; tr < tileRows && seq <= n; tr++) {
+          for (let tc = 0; tc < tileCols && seq <= n; tc++) {
+            const tileX0 = offX + tc * long;
+            const tileY0 = offY + tr * long;
+            for (let k = 0; k < 2 && seq <= n; k++) {
+              let cx, cy, bw, bl, col, row;
+              if (patternA) {
+                cx = tileX0 + k * short + short / 2;
+                cy = tileY0 + long / 2;
+                bw = short; bl = long;
+                col = tc * 2 + k; row = tr;
+              } else {
+                cx = tileX0 + long / 2;
+                cy = tileY0 + k * short + short / 2;
+                bw = long; bl = short;
+                col = tc; row = tr * 2 + k;
+              }
+              placements.push({
+                seq, col, row, layer,
+                x_mm: cx, y_mm: cy,
+                z_mm: layer * boxH + boxH,
+                label,
+                width_mm: bw, length_mm: bl, height_mm: boxH,
+              });
+              seq++;
+            }
+          }
+        }
+      }
+      const overflow = quantity > capacity ? quantity - capacity : 0;
+      return { ...base, placements, cols, rows, layers, capacity, overflow, warnings: [] };
+    }
+
+    // refreshPreview: run the local pack-order algorithm on the current form
+    // state and redraw the 3D view + summary + per-layer grids.
+    window.refreshPreview = () => {
+      const attrs = attrsFromForm();
+      const r = computePackFromAttrs(attrs);
+      // renderPack expects the shape produced by the server response; our
+      // local computation matches that shape exactly, so this is a drop-in.
+      renderPack(r, attrs);
+      // Box dims drive the picked-up-box visual too; refresh in sync.
+      renderPickStation3D();
+      renderWorld3D();
+    };
+
+    // refreshProgress polls pack-sequencer's get_progress and updates the
+    // done/failed/skipped seq sets. When they change, the 3D view re-renders
+    // so confirmed-placed boxes go from ghost outlines to solid.
+    async function refreshProgress() {
+      if (!resourceClient) return;
+      let r;
+      try {
+        r = await doCommand({ get_progress: true });
+      } catch (_) { return; }
+      const done = new Set(Array.isArray(r.done_seqs) ? r.done_seqs : []);
+      const failed = new Set(Array.isArray(r.failed_seqs) ? r.failed_seqs : []);
+      const skipped = new Set(Array.isArray(r.skipped_seqs) ? r.skipped_seqs : []);
+      // Only redraw when the sets actually changed — avoids constant WebGL
+      // rebuilds every poll.
+      if (!sameSet(done, progressDone) || !sameSet(failed, progressFailed) || !sameSet(skipped, progressSkipped)) {
+        progressDone = done;
+        progressFailed = failed;
+        progressSkipped = skipped;
+        refreshPreview();
+      }
+    }
+    function sameSet(a, b) {
+      if (a.size !== b.size) return false;
+      for (const v of a) if (!b.has(v)) return false;
+      return true;
+    }
+
+    let previewTimer = null;
+    function schedulePreview() {
+      clearTimeout(previewTimer);
+      previewTimer = setTimeout(refreshPreview, 80);
+    }
+    function wireFormListeners() {
+      const ids = ['palletH', 'boxL', 'boxW', 'boxH', 'qty', 'label', 'rotateAlt', 'centerOnPallet', 'homeX', 'homeY', 'homeZ', 'homeTheta'];
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        el.addEventListener('input', schedulePreview);
+        el.addEventListener('change', schedulePreview);
+      }
+      // Pick station inputs trigger a live re-render of the pickup
+      // 3D preview (separate from the pack preview's debouncer).
+      const psIds = ['psWidth', 'psLength', 'psThickness',
+        'psPitchIncline', 'psRollIncline', 'psTheta',
+        'psBoxX', 'psBoxY', 'psBoxZ', 'psBoxTheta', 'psPickHomeZ'];
+      for (const id of psIds) {
+        const el = document.getElementById(id);
+        if (!el) continue;
+        const handler = () => { renderPickStation3D(); renderWorld3D(); };
+        el.addEventListener('input', handler);
+        el.addEventListener('change', handler);
+      }
+    }
+    wireFormListeners();
+
+    window.saveForm = () => saveAttrs(attrsFromForm(), 'formMsg');
+
+    window.saveRaw = () => {
+      let parsed;
+      try {
+        parsed = JSON.parse(document.getElementById('rawJson').value);
+      } catch (e) {
+        flash('rawMsg', 'err', 'Invalid JSON: ' + e.message, 5000);
+        return;
+      }
+      return saveAttrs(parsed, 'rawMsg');
+    };
+
+    window.copyRawFromForm = () => {
+      document.getElementById('rawJson').value = JSON.stringify(attrsFromForm(), null, 2);
+    };
+
+    window.fillFromCurrent = () => fillFormFromAttrs(lastAttrs);
+
+    window.loadAll = async () => {
+      if (!resourceClient) return;
+      // Prefer cloud config (source of truth, what Viam's Configure page shows).
+      if (viamClient && cloudInfo?.partId) {
+        try {
+          lastAttrs = await readCloudAttrs();
+          fillFormFromAttrs(lastAttrs);
+          await primePalletInfo();
+          await reloadPickStation(true);
+          refreshPreview();
+          return;
+        } catch (e) {
+          console.warn('Cloud config read failed, falling back to DoCommand:', e);
+        }
+      }
+      try {
+        const r = await doCommand({ get_attributes: true });
+        lastAttrs = r?.attributes || {};
+        fillFormFromAttrs(lastAttrs);
+        await primePalletInfo();
+        await reloadPickStation(true);
+        refreshPreview();
+      } catch (_) {}
+    };
+
+    // primePalletInfo seeds palletInfo + palletPoseWorld from the
+    // server's get_pack_order response. The webapp's main render path
+    // computes pack order locally (in JS) for live edits, but it reads
+    // pallet dims/pose from palletInfo — which only the server knows
+    // (they live on the pallet component's frame). Without this priming
+    // call, palletInfo stays at zero and the form/3D view show blank
+    // pallet dimensions until the user clicks Verify.
+    async function primePalletInfo() {
+      try {
+        const r = await doCommand({ get_pack_order: true });
+        if (typeof r.pallet_width_mm === 'number') palletInfo.widthMM = r.pallet_width_mm;
+        if (typeof r.pallet_length_mm === 'number') palletInfo.lengthMM = r.pallet_length_mm;
+        if (typeof r.pallet_thickness_mm === 'number' && r.pallet_thickness_mm > 0) {
+          palletInfo.thicknessMM = r.pallet_thickness_mm;
+        }
+        if (r.pallet_pose && typeof r.pallet_pose === 'object') {
+          palletPoseWorld = r.pallet_pose;
+        }
+      } catch (e) {
+        console.warn('primePalletInfo failed:', e);
+      }
+    }
+
+    // palletInfo caches the pallet's physical dims. Populated from each
+    // get_pack_order response (the server pulls them from the pallet
+    // component's frame.geometry). The webapp no longer edits these
+    // fields — they're owned by the pallet component.
+    const palletInfo = {
+      widthMM: 0,
+      lengthMM: 0,
+      thicknessMM: 4.75 * 25.4,
+    };
+
+    // ─── three.js scene for the 3D preview ─────────────────────────────────
+    // The scene is created once per page load and reused across renders so
+    // the user's orbit/zoom state survives preview updates. World axes use
+    // the pallet convention: +X right, +Y receding, +Z up; the camera is
+    // positioned so (0,0,0) — the pallet's front-left corner — is visible
+    // at the front-left of the view on initial load.
+    // Keyed by canvas element so each card's three.js scene lives
+    // independently (pack preview vs. verify preview).
+    const threeStates = new Map();
+
+    function ensureThree(canvas) {
+      if (threeStates.has(canvas)) return threeStates.get(canvas);
+
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      renderer.setClearColor(0xfafafa, 1);
+      renderer.setPixelRatio(window.devicePixelRatio || 1);
+
+      const scene = new THREE.Scene();
+
+      const camera = new THREE.PerspectiveCamera(40, 1, 1, 20000);
+      camera.up.set(0, 0, 1); // Z is up in pallet world
+
+      const controls = new OrbitControls(camera, canvas);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.1;
+
+      scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+      const key = new THREE.DirectionalLight(0xffffff, 0.7);
+      key.position.set(1, -1.2, 2);
+      scene.add(key);
+      const fill = new THREE.DirectionalLight(0xffffff, 0.25);
+      fill.position.set(-1, 1, 0.5);
+      scene.add(fill);
+
+      const contentGroup = new THREE.Group();
+      scene.add(contentGroup);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        const cw = canvas.clientWidth;
+        const ch = canvas.clientHeight;
+        const dpr = window.devicePixelRatio || 1;
+        if (renderer.domElement.width !== Math.round(cw * dpr) ||
+            renderer.domElement.height !== Math.round(ch * dpr)) {
+          renderer.setSize(cw, ch, false);
+          camera.aspect = cw / Math.max(ch, 1);
+          camera.updateProjectionMatrix();
+        }
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+
+      const state = { renderer, scene, camera, controls, contentGroup, initialized: false };
+      threeStates.set(canvas, state);
+      return state;
+    }
+
+    function disposeGroup(group) {
+      while (group.children.length) {
+        const obj = group.children[0];
+        group.remove(obj);
+        obj.traverse((o) => {
+          if (o.geometry) o.geometry.dispose();
+          if (o.material) {
+            const ms = Array.isArray(o.material) ? o.material : [o.material];
+            for (const m of ms) {
+              if (m.map) m.map.dispose();
+              m.dispose();
+            }
+          }
+        });
+      }
+    }
+
+    function makeAxisLabelSprite(text, colorHex) {
+      const size = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#' + colorHex.toString(16).padStart(6, '0');
+      ctx.font = 'bold 90px ui-monospace, Menlo, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, size / 2, size / 2);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.minFilter = THREE.LinearFilter;
+      return new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+    }
+
+    // Builds a flat plane mesh that decals the seq number onto the top face
+    // of a box. The plane lies in XY (normal = +Z), so it sits directly on
+    // the box's top surface instead of always facing the camera. Text reads
+    // right-side-up when viewed looking down with the world +Y direction "up".
+    function makeTopFaceLabel(seq, w, l) {
+      const size = 512;
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      const text = String(seq);
+      ctx.font = 'bold 360px ui-monospace, Menlo, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      // White halo first so dark digits stay readable on any box color, then
+      // the dark digit on top.
+      ctx.lineWidth = 50;
+      ctx.lineJoin = 'round';
+      ctx.miterLimit = 2;
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.strokeText(text, size / 2, size / 2);
+      ctx.fillStyle = '#0b1220';
+      ctx.fillText(text, size / 2, size / 2);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.minFilter = THREE.LinearMipMapLinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.anisotropy = 16;
+      tex.needsUpdate = true;
+      const planeSize = Math.min(w, l) * 0.8;
+      const geo = new THREE.PlaneGeometry(planeSize, planeSize);
+      const mat = new THREE.MeshBasicMaterial({
+        map: tex,
+        transparent: true,
+        depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2,
+      });
+      return new THREE.Mesh(geo, mat);
+    }
+
+    function addAxisGnomon(group, length) {
+      const origin = new THREE.Vector3(0, 0, 0);
+      const axes = [
+        { dir: new THREE.Vector3(1, 0, 0), color: 0xdc2626, label: 'X' },
+        { dir: new THREE.Vector3(0, 1, 0), color: 0x16a34a, label: 'Y' },
+        { dir: new THREE.Vector3(0, 0, 1), color: 0x2563eb, label: 'Z' },
+      ];
+      for (const a of axes) {
+        const arrow = new THREE.ArrowHelper(
+          a.dir.clone().normalize(),
+          origin,
+          length,
+          a.color,
+          length * 0.18,
+          length * 0.09
+        );
+        group.add(arrow);
+        const sprite = makeAxisLabelSprite(a.label, a.color);
+        sprite.position.copy(a.dir.clone().multiplyScalar(length * 1.12));
+        const spriteSize = length * 0.32;
+        sprite.scale.set(spriteSize, spriteSize, 1);
+        group.add(sprite);
+      }
+    }
+
+    function render3D(placements, attrs) {
+      const canvas = document.getElementById('pack3dCanvas');
+      if (!canvas) return;
+
+      const src = attrs || lastAttrs;
+      const palletW = palletInfo.widthMM;
+      const palletL = palletInfo.lengthMM;
+      const palletH = Number(src.pallet_area_height_mm) || 0;
+      const thick = palletInfo.thicknessMM;
+
+      if (!palletW || !palletL) return;
+
+      const state = ensureThree(canvas);
+      const { camera, controls, contentGroup } = state;
+
+      disposeGroup(contentGroup);
+
+      // Wooden pallet, centered in three.js so position = world centroid.
+      {
+        const geo = new THREE.BoxGeometry(palletW, palletL, thick);
+        const mat = new THREE.MeshLambertMaterial({ color: 0xa16a3a });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(palletW / 2, palletL / 2, -thick / 2);
+        contentGroup.add(mesh);
+        const edges = new THREE.LineSegments(
+          new THREE.EdgesGeometry(geo),
+          new THREE.LineBasicMaterial({ color: 0x5a2e0c })
+        );
+        edges.position.copy(mesh.position);
+        contentGroup.add(edges);
+      }
+
+      // The top layer is the highest-index populated layer. Sequence sprites
+      // get placed only on those boxes — lower layers are occluded from above,
+      // so their numbers are already shown in the per-layer 2D view below.
+      const topLayer = placements.length
+        ? placements.reduce((m, p) => Math.max(m, p.layer), 0)
+        : 0;
+
+      // Boxes are rendered in three visual states based on progress:
+      //   done    → solid MeshLambertMaterial + sharp edge outline + seq label
+      //   failed  → same silhouette as "pending" but edges in red
+      //   pending → transparent fill + faint edges (ghost outline of the plan)
+      // This way the 3D scene is empty of solid boxes pre-run and fills in as
+      // the palletizer confirms each placement via report_placement(success).
+      for (const p of placements) {
+        const geo = new THREE.BoxGeometry(p.width_mm, p.length_mm, p.height_mm);
+        const hue = (210 + p.layer * 29) % 360;
+        const isDone = progressDone.has(p.seq);
+        const isFailed = progressFailed.has(p.seq);
+        const isSkipped = progressSkipped.has(p.seq);
+
+        let fillMat, edgeColor;
+        if (isDone) {
+          fillMat = new THREE.MeshLambertMaterial({ color: new THREE.Color(`hsl(${hue}, 60%, 58%)`) });
+          edgeColor = new THREE.Color(`hsl(${hue}, 45%, 28%)`);
+        } else if (isSkipped) {
+          fillMat = new THREE.MeshLambertMaterial({ color: new THREE.Color('hsl(0, 0%, 70%)'), transparent: true, opacity: 0.55 });
+          edgeColor = new THREE.Color('hsl(0, 0%, 40%)');
+        } else if (isFailed) {
+          fillMat = new THREE.MeshBasicMaterial({ color: 0xff0000, transparent: true, opacity: 0.12, depthWrite: false });
+          edgeColor = new THREE.Color('hsl(0, 80%, 45%)');
+        } else {
+          // pending — ghost outline
+          fillMat = new THREE.MeshBasicMaterial({ color: 0x9ca3af, transparent: true, opacity: 0.06, depthWrite: false });
+          edgeColor = new THREE.Color('hsl(220, 10%, 55%)');
+        }
+
+        const mesh = new THREE.Mesh(geo, fillMat);
+        mesh.position.set(p.x_mm, p.y_mm, p.z_mm - p.height_mm / 2);
+        contentGroup.add(mesh);
+
+        const edgeMat = new THREE.LineBasicMaterial({ color: edgeColor, transparent: !isDone, opacity: isDone ? 1.0 : 0.5 });
+        const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geo), edgeMat);
+        edges.position.copy(mesh.position);
+        contentGroup.add(edges);
+
+        // Only label the top layer, and only if the box is actually placed —
+        // a ghost outline doesn't need a big seq badge.
+        if (isDone && p.layer === topLayer) {
+          const label = makeTopFaceLabel(p.seq, p.width_mm, p.length_mm);
+          label.position.set(p.x_mm, p.y_mm, p.z_mm);
+          contentGroup.add(label);
+        }
+      }
+
+      // Axis gnomon anchored at the pallet origin.
+      const axisLen = Math.max(80, Math.min(palletW, palletL) * 0.2);
+      addAxisGnomon(contentGroup, axisLen);
+
+      // Pallet home coordinate frame — falls back to the far corner
+      // (pallet_width, pallet_length, 200) when unset, matching the
+      // server-side default in palletHomeLocalAndWorld.
+      const ph = src.pallet_home || {};
+      const hx = ph.x ?? palletW;
+      const hy = ph.y ?? palletL;
+      const hz = ph.z ?? 200;
+      const hTheta = (Number(ph.theta) || 0) * Math.PI / 180;
+      addCoordFrame(
+        contentGroup,
+        { position: new THREE.Vector3(hx, hy, hz), yaw: hTheta },
+        axisLen,
+        'HOME',
+        0x2563eb,
+      );
+
+      // Set the camera on first render only so subsequent previews preserve
+      // the user's orbit/zoom.
+      if (!state.initialized) {
+        const stackTop = Math.max(
+          palletH,
+          ...placements.map((p) => Number(p.z_mm) || 0)
+        );
+        const cx = palletW / 2;
+        const cy = palletL / 2;
+        const cz = Math.max(stackTop, palletH, thick) / 2 - thick / 4;
+        const span = Math.max(palletW, palletL, stackTop + thick);
+        // Viewer at (+X, −Y, +Z) so origin lands at the front-left of the view.
+        camera.position.set(cx + span * 1.1, cy - span * 1.4, cz + span * 0.9);
+        controls.target.set(cx, cy, cz);
+        controls.update();
+        state.initialized = true;
+      }
+    }
+
+    // Pallet Verification 3D view. Separate scene from the pack
+    // preview — draws the pallet wood + ghost outlines of every box,
+    // Pick Station 3D preview. Renders the conveyor surface (wood
+    // colored), a representative box sitting at the pickup spot, and
+    // the vacuum-grab coordinate frame. All in pick-station-LOCAL
+    // coordinates so the preview is independent of where the conveyor
+    // sits in world space — the user just sees their conveyor with the
+    // pickup geometry overlaid.
+    function renderPickStation3D() {
+      const canvas = document.getElementById('pickStation3dCanvas');
+      if (!canvas) return;
+      // Read current form values so live edits show immediately.
+      const num = (id) => Number(document.getElementById(id)?.value) || 0;
+      const widthMM = num('psWidth') || palletInfo.thicknessMM ? num('psWidth') : 600;
+      const lengthMM = num('psLength') || 800;
+      const thicknessMM = num('psThickness') || 40;
+      const pitchInclineDeg = num('psPitchIncline');
+      const rollInclineDeg = num('psRollIncline');
+      // Box origin offsets and theta are in the station's local frame
+      // (origin at bottom-left of the surface). Translate to the
+      // canvas-centered convention by subtracting half-extents.
+      const boxLocalX = num('psBoxX');
+      const boxLocalY = num('psBoxY');
+      const boxLocalZ = num('psBoxZ');
+      const boxThetaDeg = num('psBoxTheta');
+      const pickHomeZ = num('psPickHomeZ');
+      const boxX = boxLocalX - widthMM / 2;
+      const boxY = boxLocalY - lengthMM / 2;
+      // Box dimensions come from the pack config — this is a "typical"
+      // box, not a unique one. Falls back to a sensible default if the
+      // pack config hasn't loaded yet.
+      const boxW = Number(lastAttrs?.box_width_mm) || 100;
+      const boxL = Number(lastAttrs?.box_length_mm) || 100;
+      const boxH = Number(lastAttrs?.box_height_mm) || 80;
+
+      if (!widthMM || !lengthMM || !thicknessMM) return;
+
+      const state = ensureThree(canvas);
+      const { camera, controls, contentGroup, scene } = state;
+      disposeGroup(contentGroup);
+
+      // Apply both inclines: pitch (around local X = short axis) and
+      // roll (around local Y = long axis). Theta (yaw) is NOT applied
+      // here — rotating the whole scene around Z just makes the view
+      // confusing without adding info. The combined world scene shows
+      // theta in context.
+      contentGroup.rotation.set(
+        pitchInclineDeg * Math.PI / 180,
+        rollInclineDeg * Math.PI / 180,
+        0,
+      );
+
+      // Floor / dimension line lives outside contentGroup so it stays
+      // vertical regardless of incline. Reuse a named group on the
+      // scene so we can clear and rebuild it each render.
+      let floorGroup = scene.getObjectByName('pickStationFloorGroup');
+      if (!floorGroup) {
+        floorGroup = new THREE.Group();
+        floorGroup.name = 'pickStationFloorGroup';
+        scene.add(floorGroup);
+      }
+      disposeGroup(floorGroup);
+
+      // Conveyor wood (centered at frame origin, top face at +thickness/2).
+      {
+        const geo = new THREE.BoxGeometry(widthMM, lengthMM, thicknessMM);
+        const mat = new THREE.MeshLambertMaterial({ color: 0xa16a3a });
+        const mesh = new THREE.Mesh(geo, mat);
+        contentGroup.add(mesh);
+        const edges = new THREE.LineSegments(
+          new THREE.EdgesGeometry(geo),
+          new THREE.LineBasicMaterial({ color: 0x5a2e0c })
+        );
+        contentGroup.add(edges);
+      }
+
+      // Representative box sitting on the surface at the box origin,
+      // rotated by box theta around vertical. Z = top of conveyor +
+      // boxLocalZ + boxH/2 so the bottom rests on the surface for
+      // the typical (boxLocalZ=0) case.
+      const boxThetaRad = boxThetaDeg * Math.PI / 180;
+      {
+        const geo = new THREE.BoxGeometry(boxW, boxL, boxH);
+        const mat = new THREE.MeshLambertMaterial({
+          color: 0x9ca3af, transparent: true, opacity: 0.55,
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(boxX, boxY, thicknessMM / 2 + boxLocalZ + boxH / 2);
+        mesh.rotation.z = boxThetaRad;
+        contentGroup.add(mesh);
+        const edges = new THREE.LineSegments(
+          new THREE.EdgesGeometry(geo),
+          new THREE.LineBasicMaterial({ color: 0x4b5563 })
+        );
+        edges.position.copy(mesh.position);
+        edges.rotation.copy(mesh.rotation);
+        contentGroup.add(edges);
+      }
+
+      // Coordinate frame at the station's local origin (bottom-left
+      // of the surface, on the top face). Makes the convention
+      // visible — same role as the pallet origin gnomon.
+      const originSize = Math.max(40, Math.min(widthMM, lengthMM) * 0.12);
+      addCoordFrame(
+        contentGroup,
+        { position: new THREE.Vector3(-widthMM / 2, -lengthMM / 2, thicknessMM / 2), yaw: 0 },
+        originSize,
+        'ORIGIN',
+        0x6b7280,
+      );
+
+      // VAC frame at the center of the box's top face. Rotated by
+      // box theta so X/Y align with the box's local axes — this is
+      // where the gripper grabs.
+      const vacuumLocal = {
+        position: new THREE.Vector3(boxX, boxY, thicknessMM / 2 + boxLocalZ + boxH),
+        yaw: boxThetaRad,
+      };
+      const gnomonSize = Math.max(40, Math.min(widthMM, lengthMM) * 0.15);
+      addCoordFrame(contentGroup, vacuumLocal, gnomonSize, 'VAC', 0xdc2626);
+
+      // PICK HOME frame: same XY as VAC, lifted by pickHomeZ above the
+      // box top.
+      if (pickHomeZ > 0) {
+        const pickHomeLocal = {
+          position: new THREE.Vector3(boxX, boxY, thicknessMM / 2 + boxLocalZ + boxH + pickHomeZ),
+          yaw: boxThetaRad,
+        };
+        addCoordFrame(contentGroup, pickHomeLocal, gnomonSize, 'PICK HOME', 0x2563eb);
+      }
+
+      // Compute the post-incline world position of each of the four
+      // bottom corners of the conveyor. Both inclines apply: pitch
+      // around the short / X axis, then roll around the long / Y
+      // axis (matching the contentGroup.rotation 'XYZ' euler order).
+      // The legs need to know where each rotated corner ends up so
+      // they can support it from the floor.
+      const tiltEuler = new THREE.Euler(
+        pitchInclineDeg * Math.PI / 180,
+        rollInclineDeg * Math.PI / 180,
+        0,
+        'XYZ',
+      );
+      const bottomLocalZ = -thicknessMM / 2;
+      const cornerSpecs = [
+        { x:  widthMM / 2, y: -lengthMM / 2, z: bottomLocalZ },
+        { x: -widthMM / 2, y: -lengthMM / 2, z: bottomLocalZ },
+        { x:  widthMM / 2, y:  lengthMM / 2, z: bottomLocalZ },
+        { x: -widthMM / 2, y:  lengthMM / 2, z: bottomLocalZ },
+      ].map((c) => {
+        const v = new THREE.Vector3(c.x, c.y, c.z).applyEuler(tiltEuler);
+        return { x: v.x, y: v.y, z: v.z };
+      });
+
+      // Floor plane Z: the lowest of the four post-incline corners
+      // sits exactly lowest_point_height_mm above the floor.
+      const lowestHeightMM = num('psLowestHeight');
+      const minCornerZ = Math.min(...cornerSpecs.map((c) => c.z));
+      const floorZ = minCornerZ - lowestHeightMM;
+
+      if (lowestHeightMM > 0) {
+        // Four vertical legs as thin grey posts. Stay vertical in
+        // world Z regardless of incline; the post on the lowest corner
+        // is shortest, the post opposite is tallest — same shape as an
+        // adjustable-leg conveyor stand.
+        const legSide = Math.max(20, Math.min(widthMM, lengthMM) * 0.04);
+        const legMat = new THREE.MeshLambertMaterial({ color: 0x6b7280 });
+        for (const c of cornerSpecs) {
+          const legHeight = c.z - floorZ;
+          if (legHeight <= 0) continue;
+          const geo = new THREE.BoxGeometry(legSide, legSide, legHeight);
+          const leg = new THREE.Mesh(geo, legMat);
+          leg.position.set(c.x, c.y, floorZ + legHeight / 2);
+          floorGroup.add(leg);
+          const edges = new THREE.LineSegments(
+            new THREE.EdgesGeometry(geo),
+            new THREE.LineBasicMaterial({ color: 0x374151 })
+          );
+          edges.position.copy(leg.position);
+          floorGroup.add(edges);
+        }
+
+        // Lowest-point-height dimension line. Anchor on whichever
+        // front (low-Y) corner is at the lowest Z so the dashed line
+        // marks the actual lowest point.
+        const dimCorner = cornerSpecs.find((c) => c.z === minCornerZ) || cornerSpecs[0];
+        const lineGeo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(dimCorner.x, dimCorner.y, dimCorner.z),
+          new THREE.Vector3(dimCorner.x, dimCorner.y, floorZ),
+        ]);
+        const line = new THREE.Line(
+          lineGeo,
+          new THREE.LineDashedMaterial({ color: 0x4b5563, dashSize: 20, gapSize: 12 }),
+        );
+        line.computeLineDistances();
+        floorGroup.add(line);
+
+        // Floor tick at the dimension line's base.
+        const tickW = Math.max(50, widthMM * 0.15);
+        const floorGeo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(dimCorner.x - tickW, dimCorner.y, floorZ),
+          new THREE.Vector3(dimCorner.x + tickW, dimCorner.y, floorZ),
+        ]);
+        floorGroup.add(new THREE.Line(floorGeo, new THREE.LineBasicMaterial({ color: 0x4b5563 })));
+
+        // Height label.
+        const label = makeTextSprite(`${lowestHeightMM.toFixed(0)} mm`, 0x111827);
+        const labelSize = Math.max(40, lowestHeightMM * 0.25);
+        label.scale.set(labelSize * 2.0, labelSize * 0.5, 1);
+        const labelOffsetX = dimCorner.x > 0 ? tickW * 0.6 : -tickW * 0.6;
+        label.position.set(dimCorner.x + labelOffsetX, dimCorner.y, (dimCorner.z + floorZ) / 2);
+        floorGroup.add(label);
+      }
+
+      // Arm pedestal — drawn relative to the station so the operator can
+      // see which side of the conveyor the arm is reaching from. The
+      // canvas frame is "station-design with yaw stripped" (theta is
+      // intentionally not applied here), so we compute the arm's world
+      // position relative to the station centroid and inverse-yaw-rotate
+      // it. floorGroup keeps the pedestal world-vertical regardless of
+      // the conveyor inclines.
+      const psPose = pickStationAttrs?.pose;
+      const psW = Number(pickStationAttrs?.width_mm) || 0;
+      const psL = Number(pickStationAttrs?.length_mm) || 0;
+      const psT = Number(pickStationAttrs?.thickness_mm) || 0;
+      if (psPose && psW && psL && psT) {
+        const corner = ovPoseToThree(psPose);
+        if (corner) {
+          // Station centroid in world = corner + R_full · (W/2, L/2, -T/2).
+          const centroidOffset = new THREE.Vector3(psW / 2, psL / 2, -psT / 2)
+            .applyQuaternion(corner.quaternion);
+          const centroidWorld = corner.position.clone().add(centroidOffset);
+          // Yaw is the world heading of the station's design X axis.
+          const localX = new THREE.Vector3(1, 0, 0).applyQuaternion(corner.quaternion);
+          const yaw = Math.atan2(localX.y, localX.x);
+          const cos = Math.cos(-yaw);
+          const sin = Math.sin(-yaw);
+          // Arm shoulder cylinder — same stylized geom as the World Scene
+          // (radii 90/100, height 160, center at world z=80).
+          const armWorld = new THREE.Vector3(0, 0, 80);
+          const dx = armWorld.x - centroidWorld.x;
+          const dy = armWorld.y - centroidWorld.y;
+          const dz = armWorld.z - centroidWorld.z;
+          const armCanvas = new THREE.Vector3(
+            dx * cos - dy * sin,
+            dx * sin + dy * cos,
+            dz,
+          );
+          const geo = new THREE.CylinderGeometry(90, 100, 160, 24);
+          const mat = new THREE.MeshLambertMaterial({ color: 0x9ca3af });
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.rotation.x = Math.PI / 2; // cylinder axis Y → world Z
+          mesh.position.copy(armCanvas);
+          floorGroup.add(mesh);
+          // ARM label hovering above the shoulder.
+          const label = makeTextSprite('ARM', 0x374151);
+          label.scale.set(180, 45, 1);
+          label.position.set(armCanvas.x, armCanvas.y, armCanvas.z + 160 / 2 + 60);
+          floorGroup.add(label);
+        }
+      }
+
+      if (!state.initialized) {
+        // Frame so the arm pedestal is in view alongside the station if a
+        // world pose is known; otherwise just frame the station.
+        let armReachX = 0;
+        let armReachY = 0;
+        const armForFrame = floorGroup.children.find(
+          (c) => c.geometry instanceof THREE.CylinderGeometry &&
+            c.geometry.parameters.height === 160,
+        );
+        if (armForFrame) {
+          armReachX = Math.abs(armForFrame.position.x) + 250;
+          armReachY = Math.abs(armForFrame.position.y) + 250;
+        }
+        const span = Math.max(widthMM, lengthMM, thicknessMM + boxH + lowestHeightMM, armReachX, armReachY);
+        camera.position.set(span * 1.0, -span * 1.2, span * 0.9);
+        controls.target.set(0, 0, thicknessMM / 2 + boxH / 2 - lowestHeightMM / 2);
+        controls.update();
+        state.initialized = true;
+      }
+    }
+
+    // ovPoseToThree builds a three.js position + quaternion from a
+    // Viam ov_degrees-style pose {x,y,z,o_x,o_y,o_z,theta}. The local
+    // Z axis points along (o_x,o_y,o_z); theta is a twist in degrees
+    // around that new Z axis.
+    function ovPoseToThree(pose) {
+      if (!pose) return null;
+      const p = new THREE.Vector3(
+        Number(pose.x) || 0, Number(pose.y) || 0, Number(pose.z) || 0,
+      );
+      let ox = Number(pose.o_x) || 0;
+      let oy = Number(pose.o_y) || 0;
+      let oz = Number(pose.o_z);
+      if (oz === undefined || oz === null || (ox === 0 && oy === 0 && oz === 0)) oz = 1;
+      const n = Math.sqrt(ox*ox + oy*oy + oz*oz) || 1;
+      ox /= n; oy /= n; oz /= n;
+      // Match Viam's spatialmath OrientationVector convention:
+      //   Lon = atan2(oy, ox)   (rotate around world Z first)
+      //   Lat = acos(oz)        (then around the new Y' to drop Z onto OV)
+      //   Theta                 (twist around the new Z' = OV)
+      // This is intrinsic ZYZ. Three.js setFromUnitVectors picks the
+      // shortest-arc rotation from +Z to OV, which differs from Viam's
+      // Lon-Lat decomposition by a rotation around OV — that mismatch
+      // shows up as 90/180-degree errors in the X/Y axes after twist.
+      const lat = Math.acos(Math.max(-1, Math.min(1, oz)));
+      let lon = 0;
+      if (1 - Math.abs(oz) > 1e-6) {
+        lon = Math.atan2(oy, ox);
+      }
+      const thetaRad = (Number(pose.theta) || 0) * Math.PI / 180;
+      const qLon = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), lon);
+      const qLat = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), lat);
+      const qTheta = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), thetaRad);
+      const q = new THREE.Quaternion().multiplyQuaternions(qLon, qLat).multiply(qTheta);
+      return { position: p, quaternion: q };
+    }
+
+    // renderWorld3D draws every major element in world coordinates:
+    // floor, arm pedestal, pallet, pick-station, a representative box
+    // at the pickup spot, and coordinate frames for the vacuum and
+    // pick-home poses. Redraws whenever any input changes.
+    function renderWorld3D() {
+      const canvas = document.getElementById('world3dCanvas');
+      if (!canvas) return;
+      const state = ensureThree(canvas);
+      const { camera, controls, contentGroup } = state;
+      disposeGroup(contentGroup);
+
+      // ---- Floor plane at world z = -939 (matches fake configs) ----
+      const floorZ = -939;
+      {
+        const geo = new THREE.PlaneGeometry(4000, 4000);
+        const mat = new THREE.MeshLambertMaterial({ color: 0xe5e7eb, side: THREE.DoubleSide });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(0, 0, floorZ);
+        contentGroup.add(mesh);
+      }
+
+      // World axes gnomon at origin.
+      addCoordFrame(contentGroup,
+        { position: new THREE.Vector3(0, 0, 0), yaw: 0 },
+        200, 'WORLD', 0x111827,
+      );
+
+      // ---- Arm pedestal at world origin, 400×400×914, top at z≈0 ----
+      {
+        const geo = new THREE.BoxGeometry(400, 400, 914);
+        const mat = new THREE.MeshLambertMaterial({ color: 0x6b7280 });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(0, 0, -457);
+        contentGroup.add(mesh);
+        contentGroup.add(new THREE.LineSegments(
+          new THREE.EdgesGeometry(geo),
+          new THREE.LineBasicMaterial({ color: 0x374151 }),
+        ).translateZ(-457));
+      }
+      // Stylized shoulder: short cylinder on top of the pedestal.
+      {
+        const geo = new THREE.CylinderGeometry(90, 100, 160, 24);
+        const mat = new THREE.MeshLambertMaterial({ color: 0x9ca3af });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.rotation.x = Math.PI / 2; // cylinder axis → world Z
+        mesh.position.set(0, 0, 80);
+        contentGroup.add(mesh);
+      }
+
+      // ---- Pallet ----
+      // palletPoseWorld is the corner (bottom-left of top face). Compose
+      // with (+w/2, +l/2, -thick/2) in pallet-local to get the wood
+      // centroid for rendering.
+      if (palletInfo.widthMM && palletInfo.lengthMM && palletPoseWorld) {
+        const corner = ovPoseToThree(palletPoseWorld);
+        if (corner) {
+          const halfOffset = new THREE.Vector3(
+            palletInfo.widthMM / 2,
+            palletInfo.lengthMM / 2,
+            -palletInfo.thicknessMM / 2,
+          ).applyQuaternion(corner.quaternion);
+          const center = corner.position.clone().add(halfOffset);
+          const geo = new THREE.BoxGeometry(
+            palletInfo.widthMM, palletInfo.lengthMM, palletInfo.thicknessMM,
+          );
+          const mat = new THREE.MeshLambertMaterial({ color: 0xa16a3a });
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.position.copy(center);
+          mesh.quaternion.copy(corner.quaternion);
+          contentGroup.add(mesh);
+          const edges = new THREE.LineSegments(
+            new THREE.EdgesGeometry(geo),
+            new THREE.LineBasicMaterial({ color: 0x5a2e0c }),
+          );
+          edges.position.copy(center);
+          edges.quaternion.copy(corner.quaternion);
+          contentGroup.add(edges);
+          // Pallet-origin gnomon at the corner.
+          const palletCorner = new THREE.Object3D();
+          palletCorner.position.copy(corner.position);
+          palletCorner.quaternion.copy(corner.quaternion);
+          contentGroup.add(palletCorner);
+          addCoordFrame(palletCorner,
+            { position: new THREE.Vector3(), yaw: 0 },
+            120, 'PALLET', 0x5a2e0c,
+          );
+        }
+      }
+
+      // ---- Pick station ----
+      const psPose = pickStationAttrs?.pose;
+      const psW = Number(pickStationAttrs?.width_mm) || 0;
+      const psL = Number(pickStationAttrs?.length_mm) || 0;
+      const psT = Number(pickStationAttrs?.thickness_mm) || 0;
+      if (psPose && psW && psL && psT) {
+        const corner = ovPoseToThree(psPose);
+        if (corner) {
+          const halfOffset = new THREE.Vector3(psW / 2, psL / 2, -psT / 2)
+            .applyQuaternion(corner.quaternion);
+          const center = corner.position.clone().add(halfOffset);
+          // Dev hook — see where the render is actually placing the
+          // pick-station vs. where the user expects.
+          window.__pickStationDebug = {
+            cornerPos: corner.position.toArray(),
+            halfOffset: halfOffset.toArray(),
+            centerPos: center.toArray(),
+            dims: [psW, psL, psT],
+          };
+          const geo = new THREE.BoxGeometry(psW, psL, psT);
+          const mat = new THREE.MeshLambertMaterial({ color: 0xd6b076 });
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.position.copy(center);
+          mesh.quaternion.copy(corner.quaternion);
+          contentGroup.add(mesh);
+          const edges = new THREE.LineSegments(
+            new THREE.EdgesGeometry(geo),
+            new THREE.LineBasicMaterial({ color: 0x8b6a3d }),
+          );
+          edges.position.copy(center);
+          edges.quaternion.copy(corner.quaternion);
+          contentGroup.add(edges);
+
+          // Pick-station origin gnomon at the corner.
+          const psCornerObj = new THREE.Object3D();
+          psCornerObj.position.copy(corner.position);
+          psCornerObj.quaternion.copy(corner.quaternion);
+          contentGroup.add(psCornerObj);
+          addCoordFrame(psCornerObj,
+            { position: new THREE.Vector3(), yaw: 0 },
+            120, 'PICK', 0x8b6a3d,
+          );
+
+          // Representative box at the pickup spot.
+          const boxOffset = pickStationAttrs?.box_origin_offset_mm || {};
+          const boxX = Number(boxOffset.x) || 0;
+          const boxY = Number(boxOffset.y) || 0;
+          const boxZ = Number(boxOffset.z) || 0;
+          const boxThetaDeg = Number(pickStationAttrs?.box_theta_deg) || 0;
+          const pickHomeZ = Number(pickStationAttrs?.pick_home_z_offset_mm) || 0;
+          const boxH = Number(lastAttrs?.box_height_mm) || 80;
+          const boxBW = Number(lastAttrs?.box_width_mm) || 100;
+          const boxBL = Number(lastAttrs?.box_length_mm) || 100;
+
+          // Box center in station-local: (boxX, boxY, boxZ + boxH/2).
+          const boxCenterLocal = new THREE.Vector3(
+            boxX, boxY, boxZ + boxH / 2,
+          ).applyQuaternion(corner.quaternion).add(corner.position);
+          const boxGeo = new THREE.BoxGeometry(boxBW, boxBL, boxH);
+          const boxMat = new THREE.MeshLambertMaterial({
+            color: 0x9ca3af, transparent: true, opacity: 0.55,
+          });
+          const boxMesh = new THREE.Mesh(boxGeo, boxMat);
+          // Box orientation = station orientation × box-theta twist around station Z.
+          const boxTwist = new THREE.Quaternion().setFromAxisAngle(
+            new THREE.Vector3(0, 0, 1), boxThetaDeg * Math.PI / 180,
+          );
+          const boxQ = corner.quaternion.clone().multiply(boxTwist);
+          boxMesh.position.copy(boxCenterLocal);
+          boxMesh.quaternion.copy(boxQ);
+          contentGroup.add(boxMesh);
+          const boxEdges = new THREE.LineSegments(
+            new THREE.EdgesGeometry(boxGeo),
+            new THREE.LineBasicMaterial({ color: 0x4b5563 }),
+          );
+          boxEdges.position.copy(boxCenterLocal);
+          boxEdges.quaternion.copy(boxQ);
+          contentGroup.add(boxEdges);
+
+          // Vacuum gnomon: top center of the box.
+          const vacLocal = new THREE.Vector3(boxX, boxY, boxZ + boxH)
+            .applyQuaternion(corner.quaternion).add(corner.position);
+          const vacObj = new THREE.Object3D();
+          vacObj.position.copy(vacLocal);
+          vacObj.quaternion.copy(boxQ);
+          contentGroup.add(vacObj);
+          addCoordFrame(vacObj,
+            { position: new THREE.Vector3(), yaw: 0 },
+            80, 'VAC', 0xdc2626,
+          );
+
+          // Pick-home gnomon: above vacuum by pickHomeZ.
+          if (pickHomeZ > 0) {
+            const pickLocal = new THREE.Vector3(boxX, boxY, boxZ + boxH + pickHomeZ)
+              .applyQuaternion(corner.quaternion).add(corner.position);
+            const pickObj = new THREE.Object3D();
+            pickObj.position.copy(pickLocal);
+            pickObj.quaternion.copy(boxQ);
+            contentGroup.add(pickObj);
+            addCoordFrame(pickObj,
+              { position: new THREE.Vector3(), yaw: 0 },
+              80, 'PICK HOME', 0x2563eb,
+            );
+          }
+        }
+      }
+
+      // ---- Placed boxes ----
+      // For every placement that pack-sequencer has confirmed placed
+      // (progressDone), draw a solid box at its world pose. The
+      // pose_in_world per placement is the gripper pose at the box's
+      // top center, so the box centroid is one-half-height below
+      // along the local Z axis.
+      if (Array.isArray(verifyPlacementsCache) && verifyPlacementsCache.length) {
+        for (const pl of verifyPlacementsCache) {
+          if (!progressDone.has(pl.seq)) continue;
+          const placedPose = ovPoseToThree(pl.pose_in_world);
+          if (!placedPose) continue;
+          const heightMM = Number(pl.height_mm) || 0;
+          const widthMM = Number(pl.width_mm) || 0;
+          const lengthMM = Number(pl.length_mm) || 0;
+          if (!heightMM || !widthMM || !lengthMM) continue;
+          // Centroid: gripper pose - heightMM/2 along the box's local Z.
+          const halfDown = new THREE.Vector3(0, 0, -heightMM / 2)
+            .applyQuaternion(placedPose.quaternion);
+          const center = placedPose.position.clone().add(halfDown);
+          // Color by layer so stacked rows are distinguishable.
+          const layer = Number(pl.layer) || 0;
+          const hue = (210 + layer * 47) % 360;
+          const color = new THREE.Color(`hsl(${hue}, 60%, 58%)`);
+          const geo = new THREE.BoxGeometry(widthMM, lengthMM, heightMM);
+          const mat = new THREE.MeshLambertMaterial({ color });
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.position.copy(center);
+          mesh.quaternion.copy(placedPose.quaternion);
+          contentGroup.add(mesh);
+          const edges = new THREE.LineSegments(
+            new THREE.EdgesGeometry(geo),
+            new THREE.LineBasicMaterial({ color: 0x1f2937 }),
+          );
+          edges.position.copy(center);
+          edges.quaternion.copy(placedPose.quaternion);
+          contentGroup.add(edges);
+        }
+      }
+
+      if (!state.initialized) {
+        // Camera positioned looking toward world origin from above-front.
+        camera.position.set(1200, -1400, 1100);
+        controls.target.set(0, 0, 0);
+        controls.update();
+        state.initialized = true;
+      }
+    }
+
+    // then highlights the current seq (blue/green/red) with markers
+    // at home/start/end and a polyline for the planned trajectory.
+    function renderVerify3D() {
+      const canvas = document.getElementById('verify3dCanvas');
+      if (!canvas) return;
+      const placements = verifyPlacementsCache;
+      if (!placements || !placements.length) return;
+
+      const src = lastAttrs;
+      const palletW = palletInfo.widthMM;
+      const palletL = palletInfo.lengthMM;
+      const palletH = Number(src.pallet_area_height_mm) || 0;
+      const thick = palletInfo.thicknessMM;
+      if (!palletW || !palletL) return;
+
+      const state = ensureThree(canvas);
+      const { camera, controls, contentGroup } = state;
+      disposeGroup(contentGroup);
+
+      // Pallet wood (same frame as the pack view so the two match).
+      {
+        const geo = new THREE.BoxGeometry(palletW, palletL, thick);
+        const mat = new THREE.MeshLambertMaterial({ color: 0xa16a3a });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(palletW / 2, palletL / 2, -thick / 2);
+        contentGroup.add(mesh);
+        const edges = new THREE.LineSegments(
+          new THREE.EdgesGeometry(geo),
+          new THREE.LineBasicMaterial({ color: 0x5a2e0c })
+        );
+        edges.position.copy(mesh.position);
+        contentGroup.add(edges);
+      }
+
+      // Arm shoulder — same stylized cylinder as the World Scene
+      // (radii 90/100, height 160, center at world z=80). Converted to
+      // pallet-local so the operator can see which side of the pallet
+      // the arm is reaching from when verification fails.
+      {
+        const armWorld = { x: 0, y: 0, z: 80 };
+        const armLocal = buildWorldToPalletTransform()(armWorld);
+        if (armLocal) {
+          const geo = new THREE.CylinderGeometry(90, 100, 160, 24);
+          const mat = new THREE.MeshLambertMaterial({ color: 0x9ca3af });
+          const mesh = new THREE.Mesh(geo, mat);
+          mesh.rotation.x = Math.PI / 2; // cylinder axis Y → world Z
+          mesh.position.copy(armLocal.position);
+          contentGroup.add(mesh);
+          // ARM label hovering above the shoulder.
+          const armLabelLocal = buildWorldToPalletTransform()({ x: 0, y: 0, z: 220 });
+          if (armLabelLocal) {
+            const sprite = makeTextSprite('ARM', 0x374151);
+            sprite.position.copy(armLabelLocal.position);
+            sprite.scale.set(180, 45, 1);
+            contentGroup.add(sprite);
+          }
+        }
+      }
+
+      // Every box draws its color from verifyStatus so finished boxes
+      // keep their green/red while the sweep continues. Current-box
+      // frames/trajectory are drawn after.
+      const current = verifyCurrentDetail;
+      for (const p of placements) {
+        const geo = new THREE.BoxGeometry(p.width_mm, p.length_mm, p.height_mm);
+        const status = verifyStatus.get(p.seq); // "testing" | "passed" | "failed" | undefined
+        let fillMat, edgeColor, solid = false;
+        if (status === 'testing') {
+          fillMat = new THREE.MeshLambertMaterial({ color: 0x2563eb });
+          edgeColor = new THREE.Color(0x1d4ed8);
+          solid = true;
+        } else if (status === 'passed') {
+          fillMat = new THREE.MeshLambertMaterial({ color: 0x22c55e });
+          edgeColor = new THREE.Color(0x15803d);
+          solid = true;
+        } else if (status === 'failed') {
+          fillMat = new THREE.MeshLambertMaterial({ color: 0xdc2626 });
+          edgeColor = new THREE.Color(0x991b1b);
+          solid = true;
+        } else {
+          fillMat = new THREE.MeshBasicMaterial({ color: 0x9ca3af, transparent: true, opacity: 0.06, depthWrite: false });
+          edgeColor = new THREE.Color('hsl(220, 10%, 55%)');
+        }
+        const mesh = new THREE.Mesh(geo, fillMat);
+        mesh.position.set(p.x_mm, p.y_mm, p.z_mm - p.height_mm / 2);
+        contentGroup.add(mesh);
+        const edges = new THREE.LineSegments(
+          new THREE.EdgesGeometry(geo),
+          new THREE.LineBasicMaterial({ color: edgeColor, transparent: !solid, opacity: solid ? 1.0 : 0.5 })
+        );
+        edges.position.copy(mesh.position);
+        contentGroup.add(edges);
+      }
+
+      // Coordinate-frame gnomons for the currently-tested seq.
+      // verifyCurrentDetail stores poses already in pallet-local frame
+      // — the iteration code does the world→pallet conversion once
+      // when the server response arrives, and computes start/end
+      // directly in pallet frame for the blue "testing" phase so the
+      // frames show immediately.
+      if (current) {
+        if (current.home_local) addCoordFrame(contentGroup, current.home_local, 80, 'HOME', 0x2563eb);
+        if (current.start_local) addCoordFrame(contentGroup, current.start_local, 80, 'START', 0xf59e0b);
+        if (current.end_local) addCoordFrame(contentGroup, current.end_local, 80, 'END', 0xef4444);
+
+        if (current.status === 'passed' && Array.isArray(current.trajectory_local) && current.trajectory_local.length > 1) {
+          const pts = current.trajectory_local.map((t) => t.position);
+          if (pts.length > 1) {
+            const geo = new THREE.BufferGeometry().setFromPoints(pts);
+            const mat = new THREE.LineBasicMaterial({ color: 0x16a34a, linewidth: 2 });
+            contentGroup.add(new THREE.Line(geo, mat));
+          }
+        }
+      }
+
+      if (!state.initialized) {
+        const stackTop = Math.max(palletH, ...placements.map((p) => Number(p.z_mm) || 0));
+        const cx = palletW / 2;
+        const cy = palletL / 2;
+        const cz = Math.max(stackTop, palletH, thick) / 2 - thick / 4;
+        // Frame so the arm base is comfortably in view alongside the pallet.
+        const armLocal = buildWorldToPalletTransform()({ x: 0, y: 0, z: -457 });
+        const reachX = armLocal ? Math.abs(armLocal.position.x - cx) + 200 : 0;
+        const reachY = armLocal ? Math.abs(armLocal.position.y - cy) + 200 : 0;
+        const span = Math.max(palletW, palletL, stackTop + thick, reachX, reachY);
+        camera.position.set(cx + span * 1.1, cy - span * 1.4, cz + span * 0.9);
+        controls.target.set(cx, cy, cz);
+        controls.update();
+        state.initialized = true;
+      }
+    }
+
+    // Cached pallet pose (pallet corner in world frame), populated from
+    // each get_pack_order response. Replaces the old
+    // lastAttrs.pallet_origin reads — pack-sequencer no longer carries
+    // its own origin; the pose comes from the bound pallet component.
+    let palletPoseWorld = { x: 0, y: 0, z: 0, o_x: 0, o_y: 0, o_z: 1, theta: 0 };
+
+    function palletOriginFromLastAttrs() {
+      return {
+        x: palletPoseWorld.x,
+        y: palletPoseWorld.y,
+        z: palletPoseWorld.z,
+      };
+    }
+
+    // Computes place_start and place_end as pallet-frame {position, yaw}
+    // pairs directly from placement metadata + config knobs, so the
+    // START/END coordinate frames can render during the blue "testing"
+    // phase (before the server RPC returns). Mirrors the formula in
+    // pack-sequencer's doNextBox: end is at the slot (x, y, z = top of
+    // box), start is offset up by place_approach_height_mm and
+    // horizontally by height * tan(angle) along +X / +Y.
+    function computeStartEndLocal(p) {
+      const height = Number(lastAttrs?.place_approach_height_mm) || 100;
+      const angleXDeg = Number(lastAttrs?.place_approach_angle_deg) || 15;
+      const angleYDeg = Number(lastAttrs?.place_approach_angle_y_deg) || 0;
+      const offsetX = height * Math.tan(angleXDeg * Math.PI / 180);
+      const offsetY = height * Math.tan(angleYDeg * Math.PI / 180);
+      return {
+        end: { position: new THREE.Vector3(p.x_mm, p.y_mm, p.z_mm), yaw: 0 },
+        start: { position: new THREE.Vector3(p.x_mm + offsetX, p.y_mm + offsetY, p.z_mm + height), yaw: 0 },
+      };
+    }
+
+    // Wider text sprite than makeAxisLabelSprite — fits "HOME" /
+    // "START" / "END" / seq labels without truncation.
+    function makeTextSprite(text, colorHex) {
+      const cw = 512;
+      const ch = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = cw;
+      canvas.height = ch;
+      const ctx = canvas.getContext('2d');
+      ctx.font = 'bold 80px ui-monospace, Menlo, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 12;
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = 'rgba(255,255,255,0.95)';
+      ctx.strokeText(text, cw / 2, ch / 2);
+      ctx.fillStyle = '#' + colorHex.toString(16).padStart(6, '0');
+      ctx.fillText(text, cw / 2, ch / 2);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.minFilter = THREE.LinearFilter;
+      return new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+    }
+
+    // Builds a function that maps a world-frame pose {x,y,z,o_x,...}
+    // (as returned by the palletizer's verify_pallet DoCommand) into
+    // the pallet-local frame the 3D scene lives in. Accounts for both
+    // the translation and the Z-rotation of the pallet pose (fake-machine
+    // pallet is rotated 90°, so plain subtraction put markers on the
+    // wrong side of the pallet).
+    function buildWorldToPalletTransform() {
+      const po = palletPoseWorld;
+      const ox = Number(po.x) || 0;
+      const oy = Number(po.y) || 0;
+      const oz = Number(po.z) || 0;
+      const theta = (Number(po.theta) || 0) * Math.PI / 180;
+      const sign = (Number(po.o_z) || 1) >= 0 ? 1 : -1;
+      const yaw = sign * theta;
+      const cos = Math.cos(-yaw); // inverse rotation
+      const sin = Math.sin(-yaw);
+
+      return (pt) => {
+        if (!pt || typeof pt.x !== 'number') return null;
+        const dx = pt.x - ox;
+        const dy = pt.y - oy;
+        const dz = pt.z - oz;
+        const lx = dx * cos - dy * sin;
+        const ly = dx * sin + dy * cos;
+        const lz = dz;
+        const position = new THREE.Vector3(lx, ly, lz);
+        // Keep orientation info if it's there, rotated to local too.
+        const worldYaw = (Number(pt.o_z) || 1) >= 0
+          ? (Number(pt.theta) || 0) * Math.PI / 180
+          : -(Number(pt.theta) || 0) * Math.PI / 180;
+        const localYaw = worldYaw - yaw;
+        return { position, yaw: localYaw };
+      };
+    }
+
+    // Draws a coordinate-frame gnomon (X-red, Y-green, Z-blue arrows
+    // + a short label sprite) anchored at the given local pose. Used
+    // for home / start / end markers in the verify view so the user
+    // sees both location AND wrist orientation at each key pose.
+    function addCoordFrame(group, local, size, label, labelColor) {
+      const origin = local.position;
+      const yaw = local.yaw || 0;
+      const cos = Math.cos(yaw);
+      const sin = Math.sin(yaw);
+      const xAxis = new THREE.Vector3(cos, sin, 0);
+      const yAxis = new THREE.Vector3(-sin, cos, 0);
+      const zAxis = new THREE.Vector3(0, 0, 1);
+      const axes = [
+        { dir: xAxis, color: 0xdc2626 },
+        { dir: yAxis, color: 0x16a34a },
+        { dir: zAxis, color: 0x2563eb },
+      ];
+      for (const a of axes) {
+        group.add(new THREE.ArrowHelper(
+          a.dir,
+          origin,
+          size,
+          a.color,
+          size * 0.22,
+          size * 0.12,
+        ));
+      }
+      if (label) {
+        const sprite = makeTextSprite(label, labelColor);
+        // 4:1 aspect ratio to match the text-sprite canvas, and scaled
+        // to gnomon size so it reads without dominating the view.
+        sprite.scale.set(size * 2.0, size * 0.5, 1);
+        sprite.position.set(origin.x, origin.y, origin.z + size * 1.5);
+        group.add(sprite);
+      }
+    }
+
+    function renderPack(r, attrs) {
+      const summary = document.getElementById('packSummary');
+      const capacity = r.capacity || 0;
+      const overflow = r.overflow || 0;
+      const placements = r.placements || [];
+      verifyPlacementsCache = placements;
+      // Cache the server's pallet info from each response. The webapp
+      // form no longer carries width/length; all renderers and the
+      // local pack-preview math read from palletInfo instead.
+      if (typeof r.pallet_width_mm === 'number') palletInfo.widthMM = r.pallet_width_mm;
+      if (typeof r.pallet_length_mm === 'number') palletInfo.lengthMM = r.pallet_length_mm;
+      if (typeof r.pallet_thickness_mm === 'number' && r.pallet_thickness_mm > 0) {
+        palletInfo.thicknessMM = r.pallet_thickness_mm;
+      }
+      if (r.pallet_pose && typeof r.pallet_pose === 'object') {
+        palletPoseWorld = r.pallet_pose;
+      }
+      // Mirror dims into the editable inputs only when the user isn't
+      // currently typing — preserves in-progress edits on auto-refresh.
+      const xEl = document.getElementById('palletGeoX');
+      const yEl = document.getElementById('palletGeoY');
+      const zEl = document.getElementById('palletGeoZ');
+      if (xEl && document.activeElement !== xEl) xEl.value = palletInfo.widthMM || '';
+      if (yEl && document.activeElement !== yEl) yEl.value = palletInfo.lengthMM || '';
+      if (zEl && document.activeElement !== zEl) zEl.value = palletInfo.thicknessMM || '';
+      const rows = [
+        ['mode', r.mode || 'column'],
+        ['grid', `${r.cols} cols × ${r.rows} rows × ${r.layers} layers`],
+        ['capacity', capacity],
+        ['quantity', r.quantity ?? 0],
+        ['planned', placements.length],
+      ];
+      // Surface confirmed-placement progress from pack-sequencer's cursor so
+      // the user can see how far along the run is at a glance.
+      if (progressDone.size > 0 || progressFailed.size > 0 || progressSkipped.size > 0) {
+        rows.push(['placed (confirmed)', progressDone.size]);
+        if (progressFailed.size > 0) rows.push(['failed (retry)', `<span class="warn-text">${progressFailed.size}</span>`]);
+        if (progressSkipped.size > 0) rows.push(['skipped', progressSkipped.size]);
+      }
+      if (overflow > 0) rows.push(['overflow', `<span class="warn-text">${overflow} box(es) exceed capacity</span>`]);
+      const warnings = Array.isArray(r.warnings) ? r.warnings : [];
+      for (const w of warnings) rows.push(['warning', `<span class="warn-text">${w}</span>`]);
+      summary.innerHTML = rows.map(([k, v]) => `<div class="k">${k}</div><div>${v}</div>`).join('');
+
+      const src = attrs || lastAttrs;
+      render3D(placements, src);
+      renderVerify3D();
+
+      const container = document.getElementById('packLayers');
+      container.innerHTML = '';
+      if (!placements.length) {
+        container.innerHTML = '<div style="color:var(--muted);font-size:13px;">No boxes to place (check pallet / box dimensions).</div>';
+        return;
+      }
+      const byLayer = {};
+      for (const p of placements) {
+        (byLayer[p.layer] ||= []).push(p);
+      }
+      const palletL = palletInfo.lengthMM || 1;
+      const palletW = palletInfo.widthMM || 1;
+      const maxCanvas = 260;
+      const scale = maxCanvas / Math.max(palletL, palletW);
+      const canvasW = Math.max(40, palletW * scale);
+      const canvasH = Math.max(40, palletL * scale);
+
+      for (const layerIdx of Object.keys(byLayer).sort((a, b) => +a - +b)) {
+        const wrap = document.createElement('div');
+        wrap.className = 'layer';
+        const title = document.createElement('div');
+        title.className = 'layer-title';
+        title.textContent = `layer ${layerIdx} (${byLayer[layerIdx].length} boxes)`;
+        wrap.appendChild(title);
+        const canvas = document.createElement('canvas');
+        canvas.width = canvasW;
+        canvas.height = canvasH;
+        wrap.appendChild(canvas);
+        container.appendChild(wrap);
+
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#f3f4f6';
+        ctx.fillRect(0, 0, canvasW, canvasH);
+        ctx.strokeStyle = '#9ca3af';
+        ctx.strokeRect(0.5, 0.5, canvasW - 1, canvasH - 1);
+
+        for (const p of byLayer[layerIdx]) {
+          // Pallet frame: +X right, +Y back (into the scene). The top-down
+          // view flips canvas-Y so world (0,0) sits at the bottom-left — same
+          // origin as the 3D view's axis gnomon.
+          const wx0 = p.x_mm - p.width_mm / 2;
+          const wy1 = p.y_mm + p.length_mm / 2;
+          const x = wx0 * scale;
+          const y = canvasH - wy1 * scale;
+          const w = p.width_mm * scale;
+          const h = p.length_mm * scale;
+          ctx.fillStyle = '#dbeafe';
+          ctx.fillRect(x, y, w, h);
+          ctx.strokeStyle = '#1e40af';
+          ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+          ctx.fillStyle = '#1e3a8a';
+          ctx.font = 'bold 12px ui-monospace, monospace';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(String(p.seq), x + w / 2, y + h / 2);
+        }
+
+        // Axis hint at the origin (bottom-left of the canvas).
+        const ox = 4, oy = canvasH - 4;
+        ctx.lineWidth = 2;
+        // +X (red) →
+        ctx.strokeStyle = '#dc2626';
+        ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + 18, oy); ctx.stroke();
+        ctx.fillStyle = '#dc2626';
+        ctx.font = 'bold 10px ui-monospace, monospace';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+        ctx.fillText('X', ox + 20, oy + 3);
+        // +Y (green) ↑
+        ctx.strokeStyle = '#16a34a';
+        ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox, oy - 18); ctx.stroke();
+        ctx.fillStyle = '#16a34a';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText('Y', ox + 3, oy - 20);
+      }
+    }
+
+    connect();
+  </script>
+</body>
+</html>
